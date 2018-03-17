@@ -1,0 +1,59 @@
+#+title: My Resume
+#+date: 2018-03-11
+
+* Rebecca Skinner
+** Skills
+
+*** Language Background
+As a polyglot developer, I am comfortable working with a wide variety
+of languages, as well as picking up new languages as necessary to
+solve the problems at hand.  I have experience with a wide variety of
+language paradigms, including extensive commercial experience working
+with functional and delarative languages, and developing embedded DSLs
+to solve business domain problems.
+
+The languages I most typically pick up these days include:
+
+ - Haskell, Go, C, Ruby, and Erlang
+
+** Work History
+
+*** [[https://www.rackspace.com][Rackspace Hosting]]
+Software Developer (IV) from 2017-10 -- Present
+
+**** Key Skills
+Data Science, Haskell, Go, Python, R, Hadoop, BigQuery
+
+**** Key Achivements
+At Rackspace I have worked with stakeholders to understand key
+maintenence and support costs across out product portfolio.  Working
+with data scientists, support engineers, and executive teams, I have
+implemented tooling to identify and report on key factors contributing
+to support costs, customer satisfaction, and support engineer staffing
+requirements.  My work has provided key insights into how to maintain
+steady linear growth in operational expenditures under expotential
+customer growth while maintaining fanatical customer experience.
+
+**** Summary
+As part of the rackspace private cloud ops-fabric team, I work with
+internal and external customers, executives, and manages across our
+organization to provide insights into key performance indicators,
+build observability systems, and
+
+*** [[https://aster.is][Asteris, LLC]]
+Principal Software Architect from 2016-07 -- 2017-10
+
+*** [[https://ctl.io][CenturyLink Cloud]]
+Sr. Software Developer from 2015-10 -- 2016-07
+
+*** [[https://camber.com][Camber Corporation]]
+Lead Software Developer from 2011-06 -- 2015-10
+
+*** [[https://bandurasystems.com][Techguard Security, LLC]]
+Sr. Software Developer from 2010-06 -- 2011-06
+
+*** EADS North America DS3
+Research Scientist, Team Lead from 2008-11 -- 2010-06
+
+*** Cymtec Systems
+Lead Software Developer fro 2007-05 -- 2008-10
