@@ -12,6 +12,10 @@
   </url>
   
   <url>
+    <loc>/blog/_teachinghaskell/</loc>
+  </url>
+  
+  <url>
     <loc>/categories/</loc>
     <priority>0</priority>
   </url>
