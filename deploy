@@ -1,0 +1,8 @@
+#!/bin/bash
+
+git co hugo
+hugo
+git stash
+git add public
+git commit -am "auto-add generated code from publish script"
+git co master
