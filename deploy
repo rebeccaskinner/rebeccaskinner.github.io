@@ -6,3 +6,12 @@ git stash
 git add public
 git commit -am "auto-add generated code from publish script"
 git co master
+git co hugo -- public
+for d in $(echo $(find ./public -type d -exec basename {} + | grep -v public)); do
+    rm -fr "${d}"
+done
+mv public/* .
+rmdir public
+DATE=$(date)
+git add .
+git commit -am "auto-add published files on: ${DATE}"
