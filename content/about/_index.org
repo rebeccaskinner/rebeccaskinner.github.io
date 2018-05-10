@@ -4,7 +4,7 @@
 * Rebecca Skinner
 ** Skills
 
-*** Language Background
+*** Languages Background
 As a polyglot developer, I am comfortable working with a wide variety
 of languages, as well as picking up new languages as necessary to
 solve the problems at hand.  I have experience with a wide variety of
@@ -12,9 +12,23 @@ language paradigms, including extensive commercial experience working
 with functional and delarative languages, and developing embedded DSLs
 to solve business domain problems.
 
-The languages I most typically pick up these days include:
+The languages I've been using the most recently are:
 
- - Haskell, Go, C, Ruby, and Erlang
+ - Haskell
+ - Go
+ - C
+ - Ruby
+ - Erlang
+
+*** Technical Subdomains
+I have experience working across a breadth of technical subdomains
+including:
+
+ - Networking
+ - Security
+ - DevOps
+ - Embedded Systems Development
+ - Linux Kernel Development
 
 ** Work History
 
