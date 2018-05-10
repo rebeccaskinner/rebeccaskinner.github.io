@@ -17,7 +17,7 @@ canonifyURLs = true
   # Sets the navbarTitle that appears in the top left of the navigation bar
   navbarTitle          = "Rebecca Skinner"
   # Sets where "View More Posts" links
-  viewMorePostLink     = "/blog/"
+  viewMorePostLink     = "/post/"
 
 # Optional Params
   # Sets navbarTitle to match the section of the website
@@ -124,7 +124,7 @@ canonifyURLs = true
 
 [[menu.main]]
   name = "Blog"
-  url = "/blog/"
+  url = "/post/"
   identifier = "fa fa-newspaper-o"
   weight = 3
 
