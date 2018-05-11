@@ -6,19 +6,36 @@
     <description>Recent content in Blog on Rebecca Skinner</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 28 Sep 2014 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 11 May 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/blog/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
-      <title>Creating a New Theme</title>
-      <link>/blog/creating-a-new-theme/</link>
-      <pubDate>Sun, 28 Sep 2014 00:00:00 +0000</pubDate>
+      <title>Visualizing data with Haskell</title>
+      <link>/blog/haskell_data_visualizations/</link>
+      <pubDate>Fri, 11 May 2018 00:00:00 +0000</pubDate>
       
-      <guid>/blog/creating-a-new-theme/</guid>
-      <description>Introduction This tutorial will show you how to create a simple theme in Hugo. I assume that you are familiar with HTML, the bash command line, and that you are comfortable using Markdown to format content. I&amp;rsquo;ll explain how Hugo uses templates and how you can organize your templates to create a theme. I won&amp;rsquo;t cover using CSS to style your theme.
-We&amp;rsquo;ll start with creating a new site with a very basic template.</description>
+      <guid>/blog/haskell_data_visualizations/</guid>
+      <description> Introduction </description>
+    </item>
+    
+    <item>
+      <title>Building Python Applications with Nix</title>
+      <link>/blog/python_and_nix/</link>
+      <pubDate>Wed, 09 May 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/python_and_nix/</guid>
+      <description> Introduction </description>
+    </item>
+    
+    <item>
+      <title>Teaching Haskell</title>
+      <link>/blog/teachinghaskell/</link>
+      <pubDate>Wed, 09 May 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/teachinghaskell/</guid>
+      <description> Introduction </description>
     </item>
     
   </channel>
