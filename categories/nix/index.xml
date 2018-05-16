@@ -17,7 +17,7 @@
       <pubDate>Wed, 09 May 2018 00:00:00 +0000</pubDate>
       
       <guid>/blog/python_and_nix/</guid>
-      <description> Introduction </description>
+      <description>Introduction Nix is a package general purpose package manager available for *nix systems, including Linux (including NixOS), *bsd, and MacOS. Nix provides several novel capabilities, specifically immutability and reproducability. A nix package defines exact versions of all of it&amp;rsquo;s dependencies, and a nix installation manages each individual application independently. In this post we&amp;rsquo;ll look at using Nix during the development process, comparing it to virtualenv and pip for developing a python application.</description>
     </item>
     
   </channel>
