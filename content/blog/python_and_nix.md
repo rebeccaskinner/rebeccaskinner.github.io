@@ -11,30 +11,46 @@ type = "post"
 ## Introduction
 
 Nix is a package general purpose package manager available for *nix systems,
-including NixOS (a Linux distrobution), Linux, *bsd, and MacOS.  Nix provides
-several novel capabilities, specifically immutability and reproducability.  A
-nix package defines exact versions of all of it's dependencies, and a nix
-installation manages each individual application independently.  In this post
-we'll look at using Nix during the development process, comparing it to
-virtualenv and pip for developing a python application.
+including Linux (including [NixOS](https://nixos.org)), *bsd, and MacOS.  Nix
+provides several novel capabilities, specifically immutability and
+reproducability.  A nix package defines exact versions of all of it's
+dependencies, and a nix installation manages each individual application
+independently.  In this post we'll look at using Nix during the development
+process, comparing it to virtualenv and pip for developing a python application.
 
 ## Background
 
-I recently joined a new team.  Like most teams that I've worked on over the last
-decade, my new team is a polyglot shop with tools written in many different
-languages.  In this case of this particular team, one of the core applications
-that I found myself working with is written in Python.  Although I've easily
-worked in a dozen languages in my career, this was my first time working with
-python in earnest.  Every new language brings a unique set of challenges as you
-adopt to the idioms, quirks, and warts of both the language and it's ecosystem.
-One of the warts that I found most troublesome when I started working with
-python was the tooling around managing package installation and package
-versioning.  Virtualenv and pip in particular caused me a great deal of
-frustration during my python onboarding process.
+Most software developers these days find ourselves working across a variety of
+applications written in different languages, with different dependencies, and
+targeting different platforms.  The net result of this is a proliferation of
+tools designed to address the problem of how to manage our development
+environments.  Most of these tools are specialized in one way or another.  Tools
+like homebrew, apt, and chocolatey may help us install applications, but then we
+must turn to separate tools, often language specific, like pip, gem, and hex to
+install language dependencies.  Tools like virtualenv, rbenv, and pkg-config
+help us manage separate tool and dependency versions.  We may even use tools
+like Docker to make it easier to distribute our applications across different
+environments.
 
-To understand my frustration it's helpful to understand both my background and
-the languages and tools I work with day-to-day.  For most of my first decade in
-the industry I worked primarily on appliances
+Some languages and toolchains, like `go dep` and haskell's `stack` and
+`cabal-install`, manage versioning and dependencies within the scope of a
+project's source tree, others like virtualenv, manage virtual environments with
+through environment variables or symlinks.
+
+The nix package manager addresses several many of the problems that developers
+might otherwise need to use multiple tools to manage.  Nix provides a mechanism
+to create immutable environments for building and running applications by
+combining package installation, dependency management, and environment setup all
+in a single tool.  Nix can be used in place of tools like homebrew or apt to
+distribute and install packages, it can be used to manage local user-wide
+environment options like shell and editor configs, and it can be used to manage
+the build environment for specific applications.  These configurations can be
+composed and combined into unique reproducible environments.
+
+The rest of this article will focus on one particular use-case of nix: as a
+replacement for tools that manage virtual environments.  In our example we will
+be developing a python application, and using nix in place of virtualenv to
+manage our applications dependencies.
 
 ## Setting Up the Environment
 
