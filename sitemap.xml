@@ -3,17 +3,7 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>/blog/haskell_data_visualizations/</loc>
-    <lastmod>2018-05-11T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
     <loc>/blog/python_and_nix/</loc>
-    <lastmod>2018-05-09T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>/blog/teachinghaskell/</loc>
     <lastmod>2018-05-09T00:00:00+00:00</lastmod>
   </url>
   
@@ -24,12 +14,12 @@
   
   <url>
     <loc>/</loc>
-    <lastmod>2018-05-11T00:00:00+00:00</lastmod>
+    <lastmod>2018-05-09T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>/blog/</loc>
-    <lastmod>2018-05-11T00:00:00+00:00</lastmod>
+    <lastmod>2018-05-09T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -43,36 +33,12 @@
   </url>
   
   <url>
-    <loc>/categories/data-science/</loc>
-    <lastmod>2018-05-11T00:00:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
     <loc>/tags/flask/</loc>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/categories/flask/</loc>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/tags/haskell/</loc>
-    <lastmod>2018-05-09T00:00:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/categories/haskell/</loc>
-    <lastmod>2018-05-11T00:00:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/tags/mentoring/</loc>
-    <lastmod>2018-05-09T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -114,12 +80,6 @@
   <url>
     <loc>/tags/</loc>
     <lastmod>2018-05-09T00:00:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/tags/tutorial/</loc>
-    <lastmod>2018-05-11T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
