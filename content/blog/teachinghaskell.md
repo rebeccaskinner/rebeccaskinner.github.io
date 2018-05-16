@@ -5,6 +5,7 @@ tags = ["haskell", "mentoring"]
 date = "2018-05-09"
 description = "Teaching haskell, and other technologies"
 type = "post"
+draft = true
 +++
 
 ## Introduction

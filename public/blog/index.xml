@@ -6,19 +6,10 @@
     <description>Recent content in Blog on Rebecca Skinner</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 11 May 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 09 May 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/blog/index.xml" rel="self" type="application/rss+xml" />
     
-    
-    <item>
-      <title>Visualizing data with Haskell</title>
-      <link>/blog/haskell_data_visualizations/</link>
-      <pubDate>Fri, 11 May 2018 00:00:00 +0000</pubDate>
-      
-      <guid>/blog/haskell_data_visualizations/</guid>
-      <description> Introduction </description>
-    </item>
     
     <item>
       <title>Building Python Applications with Nix</title>
@@ -27,15 +18,6 @@
       
       <guid>/blog/python_and_nix/</guid>
       <description>Introduction Nix is a package general purpose package manager available for *nix systems, including Linux (including NixOS), *bsd, and MacOS. Nix provides several novel capabilities, specifically immutability and reproducability. A nix package defines exact versions of all of it&amp;rsquo;s dependencies, and a nix installation manages each individual application independently. In this post we&amp;rsquo;ll look at using Nix during the development process, comparing it to virtualenv and pip for developing a python application.</description>
-    </item>
-    
-    <item>
-      <title>Teaching Haskell</title>
-      <link>/blog/teachinghaskell/</link>
-      <pubDate>Wed, 09 May 2018 00:00:00 +0000</pubDate>
-      
-      <guid>/blog/teachinghaskell/</guid>
-      <description> Introduction </description>
     </item>
     
     <item>

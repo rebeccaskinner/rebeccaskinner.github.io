@@ -7,7 +7,7 @@ description = "Building data visualizations with Haskell"
 linktitle = ""
 title = "Visualizing data with Haskell"
 type = "post"
-
+draft = true
 +++
 
 ## Introduction
