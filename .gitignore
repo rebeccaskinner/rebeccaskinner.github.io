@@ -20,3 +20,5 @@ cabal.sandbox.config
 .stack-work/
 _cache/
 _site/
+dist-newstyle
+result
