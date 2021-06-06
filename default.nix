@@ -1,8 +1,12 @@
 { doCheck ? true
-, pkgs ? import <nixpkgs> {}
+# , pkgs ? import <nixpkgs> {}
 }:
 
 let
+  pkgs = import <nixpkgs> {
+    config = { allowBroken = true; };
+    overlays = [(import ./nix/hakyll)];
+  };
   builder = import ./builder { inherit pkgs; };
   built = pkgs.stdenv.mkDerivation {
     name = "rebeccaskinner.net";
