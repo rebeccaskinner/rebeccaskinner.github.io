@@ -22,3 +22,4 @@ _cache/
 _site/
 dist-newstyle
 result
+.#*
