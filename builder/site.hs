@@ -1,8 +1,21 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-import           Data.Monoid (mappend)
+import           Data.Monoid              (mappend)
 import           Hakyll
+import           Text.Pandoc.Highlighting (Style, breezeDark, styleToCss)
+import           Text.Pandoc.Options      (ReaderOptions (..),
+                                           WriterOptions (..))
 
+pandocCodeStyle :: Style
+pandocCodeStyle = breezeDark
+
+pandocCompiler' :: Compiler (Item String)
+pandocCompiler' =
+  pandocCompilerWith
+    defaultHakyllReaderOptions
+    defaultHakyllWriterOptions
+      { writerHighlightStyle   = Just pandocCodeStyle
+      }
 
 --------------------------------------------------------------------------------
 main :: IO ()
@@ -17,13 +30,13 @@ main = hakyll $ do
 
     match (fromList ["about.rst", "contact.markdown"]) $ do
         route   $ setExtension "html"
-        compile $ pandocCompiler
+        compile $ pandocCompiler'
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= relativizeUrls
 
     match "posts/*" $ do
         route $ setExtension "html"
-        compile $ pandocCompiler
+        compile $ pandocCompiler'
             >>= loadAndApplyTemplate "templates/post.html"    postCtx
             >>= loadAndApplyTemplate "templates/default.html" postCtx
             >>= relativizeUrls
@@ -42,6 +55,10 @@ main = hakyll $ do
                 >>= loadAndApplyTemplate "templates/default.html" archiveCtx
                 >>= relativizeUrls
 
+    create ["css/syntax.css"] $ do
+      route idRoute
+      compile $ do
+        makeItem $ styleToCss pandocCodeStyle
 
     match "index.html" $ do
         route idRoute
@@ -49,7 +66,6 @@ main = hakyll $ do
             posts <- recentFirst =<< loadAll "posts/*"
             let indexCtx =
                     listField "posts" postCtx (return posts) `mappend`
-                    constField "title" "Home"                `mappend`
                     defaultContext
 
             getResourceBody
@@ -57,7 +73,7 @@ main = hakyll $ do
                 >>= loadAndApplyTemplate "templates/default.html" indexCtx
                 >>= relativizeUrls
 
-    match "templates/*" $ compile templateCompiler
+    match "templates/*" $ compile templateBodyCompiler
 
 
 --------------------------------------------------------------------------------
@@ -65,4 +81,3 @@ postCtx :: Context String
 postCtx =
     dateField "date" "%B %e, %Y" `mappend`
     defaultContext
-
