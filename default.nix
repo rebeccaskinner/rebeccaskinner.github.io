@@ -12,7 +12,7 @@ let
   };
 
   builder = import ./builder { inherit pkgs; };
-  built = pkgs.stdenv.mkDerivation {
+  site = pkgs.stdenv.mkDerivation {
     name = "rebeccaskinner.net";
     inherit doCheck;
     src = pkgs.nix-gitignore.gitignoreSourcePure [
@@ -37,4 +37,4 @@ let
   };
 in
 if pkgs.lib.inNixShell then builder
-else { inherit builder built; inherit (pkgs) linkchecker; }
+else { inherit builder site; inherit (pkgs) linkchecker; }
