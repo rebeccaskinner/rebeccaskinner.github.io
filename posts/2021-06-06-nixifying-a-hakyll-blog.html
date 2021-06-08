@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Rebecca Skinner - The Nixification of rebeccaskinner.net</title>
+        <link rel="stylesheet" href="../css/default.css" />
+        <link rel="stylesheet" href="../css/syntax.css" />
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">Rebecca Skinner</a>
+            </div>
+            <nav>
+              <a href="../">Home</a>
+              <a href="../resume.html">Resume</a>
+              <a href="https://github.com/rebeccaskinner/">Github</a>
+              <a href="https://twitter.com/cercerilla">Twitter</a>
+              <a href="../archive.html">Archive</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1>The Nixification of rebeccaskinner.net</h1>
+            <article>
+    <section class="header">
+        Posted on June  6, 2021
+        
+            by Rebecca Skinner
+        
+    </section>
+    <section>
+        <h1 id="the-great-nixification">The Great Nixification</h1>
+<p>I recently migrated this blog away from stack to being built with nix and cabal. The process of migrating to nix has been largely smooth with a couple of learning opportunities along the way. In this post I’ll walk you through how the blog is set up, with a particular focus on how to patch hakyll 4.14 to work with recent versions of nixpkgs, including setting up a custom <code>haskellPackages</code> overlay. After you’ve read this you should be able to build your own nixified hakyll site, and generally have a better understanding of how to manage overlays in the haskell nixpkgs ecosystem.</p>
+<h1 id="the-architecture-of-a-hakyll-site">The Architecture of a Hakyll Site</h1>
+<p><a href="https://jaspervdj.be/hakyll/">Hakyll</a> is a library for building static site generators (SSGs). Like any other static site built with a static site generator, a hakyll site is a static site that is built for you from some component pieces like template files, markdown, and static images, javascript, or CSS. Unlike other static site generators, and a key difference when we are considering how to build our site is that hakyll, being a library, is not a stand-alone tool that we can directly use to build our site. Instead, building our hakyll site is a two-step process: First we need to build our own static site generator, which imports hakyll as a library to do the heavy lifting for us, and second we need to use our newly compiled static site generator to build the site itself.</p>
+<h1 id="nixification-part-1">Nixification Part 1</h1>
+<p>I chose to start the nixification of my site by borrowing some ideas from the architecture of <a href="https://github.com/haskell-infra/www.haskell.org">the haskell.org site</a> since it’s an existing hakyll site that I know is reliable and easy to work with. Throughout this post I’ll focus on the versions that I built, but I would encourage an interested reader to follow up by reviewing the haskell.org code as well to compare and contrast the two quite similar approaches toward building an application with nix.</p>
+<p>Conceptually, the layout is fairly straightforward. All of the <em>content</em> for the site, like markdown files, images, and CSS, lives in the root directory of the project. A <code>default.nix</code> in the project root has targets to build the site using a <em>builder</em>, which is the static site generator that we’re creating using hakyll.</p>
+<h2 id="the-builder">The Builder</h2>
+<p>The builder is the static site generator that’s responsible for actually building the site. The builder for this site consists of a few files, listed below.</p>
+<ul>
+<li>site.hs: The source code to the builder</li>
+<li>rebeccaskinner-net.cabal: The cabal file we’ll use to build the builder</li>
+<li>LICENSE: A copy of the BSD3 LICENSE</li>
+<li>default.nix: The nix expression to build the builder</li>
+</ul>
+<p>For this post we’ll focus on the nix files, but if you are interested in reviewing the full source of the builder you can <a href="https://github.com/rebeccaskinner/rebeccaskinner.github.io/tree/src">take a look at it on github</a>.</p>
+<p>This nix expression, like most, is a function whose parameter is a record with a <code>pkgs</code> field that will be the package set that we should build with. As is typical, if no package set is provided, we’ll default to the current nixpkgs:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span> <span class="ex">pkgs</span> <span class="pp">?</span> import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {} }:</span></code></pre></div>
+<p>We’re going to build our package with the <code>developPackage</code> function that’s given to use by the nixpkgs haskell infrastructure. <a href="https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/haskell-modules/make-package-set.nix#L250">The documentation</a> for this function is available in the nixpkgs comments, and describes how to use the function.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">pkgs.haskellPackages.developPackage</span> {</span></code></pre></div>
+<p>We need to pass in a record with a few required fields, and some optional ones. The first parameter we need to pass in is the root of the project filesystem. This needs to be a derivation in the package store, so we can’t simply pass in a path or list of files directly. One option to create a filesystem in the nix packagestore is to use <code>builtins.filterPackage</code>, but we’ll opt for the more egonomic <code>gitignoreSourcePure</code> from <a href="https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-nix-gitignore">nix-gitignore</a>.</p>
+<p>We call this function with a list of globs, using the same syntax we could use for gitignore files, and a root directory. We’ll get back a derivation in the nix store with the filesystem:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>  <span class="ex">root</span> = pkgs.nix-gitignore.gitignoreSourcePure [</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;dist-newstyle&quot;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;dist&quot;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;.*#&quot;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;.git&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="ex">]</span> ./.<span class="kw">;</span></span></code></pre></div>
+<p>In our case, we’re filtering out cabal’s <code>dist</code> and <code>dist-newstyle</code> directories from our builds, as well as any emacs backup files, and any git directory. If you’re curious, we can see the resulting derivation by running this command in the nix repl:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">~/projects/rebeccaskinner.github.io</span> λ cd builder</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">~/projects/rebeccaskinner.github.io/builder</span> λ nix repl <span class="st">'&lt;nixpkgs&gt;'</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Welcome</span> to Nix version 2.3.11. Type :<span class="pp">?</span> for help.</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Loading</span> <span class="st">'&lt;nixpkgs&gt;'</span>...</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">Added</span> 14253 variables.</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ex">nix-repl</span><span class="op">&gt;</span> nix-gitignore.gitignoreSourcePure [<span class="st">&quot;dist&quot;</span> <span class="st">&quot;dist-newstyle&quot;</span> <span class="st">&quot;.*#&quot;</span> <span class="st">&quot;.git&quot;</span> ] ./.</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;/nix/store/zq7lwzzn4rlwfdxlrp93b26wf47mbyx2-builder&quot;</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="ex">~/projects/rebeccaskinner.github.io/builder</span> λ ls <span class="at">-la</span> <span class="st">&quot;/nix/store/zq7lwzzn4rlwfdxlrp93b26wf47mbyx2-builder&quot;</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="ex">total</span> 4940</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="ex">dr-xr-xr-x</span>    2 root root      4096 Dec 31  1969 ./</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="ex">drwxrwxr-t</span> 8575 root nixbld 5033984 Jun  6 23:58 ../</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="ex">-r--r--r--</span>    1 root root       497 Dec 31  1969 default.nix</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="ex">-r--r--r--</span>    1 root root      1458 Dec 31  1969 LICENSE</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="ex">-r--r--r--</span>    1 root root       480 Dec 31  1969 rebeccaskinner-net.cabal</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="ex">-r--r--r--</span>    1 root root      2815 Dec 31  1969 site.hs</span></code></pre></div>
+<p>As you can see, the resulting derivation contains only the files that we need to compile our builder.</p>
+<p>The next thing we would like to add are some build-time dependencies. <code>developPackage</code> will use our cabal file to resolve our build-time library dependencies, but we’d like to add any tools that we want to make available within a nix shell. We can pass any any extra haskell dependencies that we want in the <code>modifier</code> field, where we can add some things to the <code>buildTools</code> list:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>  <span class="ex">modifier</span> = drv: pkgs.haskell.lib.overrideCabal drv <span class="er">(</span><span class="ex">attrs:</span> {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="ex">buildTools</span> = with pkgs.haskellPackages<span class="kw">;</span> <span class="kw">(</span><span class="ex">attrs.buildTools</span> or []<span class="kw">)</span> <span class="ex">++</span> [</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>      <span class="ex">cabal-install</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>      <span class="ex">hakyll</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>      <span class="ex">pkgs.linkchecker</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="ex">]</span><span class="kw">;</span></span></code></pre></div>
+<p>Finally, we need to override some settings on the derivation that <code>developPackage</code> generates for us. In particular, we need to set some locale information to ensure we don’t run into any problems rendering our documents:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="er">})</span><span class="ex">.overrideAttrs</span> <span class="er">(</span><span class="ex">old:</span> {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">LOCALE_ARCHIVE</span> = <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.glibcLocales</span><span class="va">}</span><span class="st">/lib/locale/locale-archive&quot;</span><span class="kw">;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">LC_ALL</span> = <span class="st">&quot;C.UTF-8&quot;</span><span class="kw">;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="er">}</span><span class="kw">)</span></span></code></pre></div>
+<p>The final version of our nix code looks like this:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span> <span class="ex">pkgs</span> <span class="pp">?</span> import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {}</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">}:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">pkgs.haskellPackages.developPackage</span> {</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="ex">root</span> = pkgs.nix-gitignore.gitignoreSourcePure [</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;dist-newstyle&quot;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;.*#&quot;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;.git&quot;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="ex">]</span> ./.<span class="kw">;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="ex">modifier</span> = drv: pkgs.haskell.lib.overrideCabal drv <span class="er">(</span><span class="ex">attrs:</span> {</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="ex">buildTools</span> = with pkgs.haskellPackages<span class="kw">;</span> <span class="kw">(</span><span class="ex">attrs.buildTools</span> or []<span class="kw">)</span> <span class="ex">++</span> [</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>      <span class="ex">cabal-install</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>      <span class="ex">hakyll</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>      <span class="ex">pkgs.linkchecker</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="ex">]</span><span class="kw">;</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  <span class="er">}</span><span class="kw">);</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="er">}</span><span class="kw">)</span><span class="ex">.overrideAttrs</span> <span class="er">(</span><span class="ex">old:</span> {</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  <span class="ex">LOCALE_ARCHIVE</span> = <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.glibcLocales</span><span class="va">}</span><span class="st">/lib/locale/locale-archive&quot;</span><span class="kw">;</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  <span class="ex">LC_ALL</span> = <span class="st">&quot;C.UTF-8&quot;</span><span class="kw">;</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="er">}</span><span class="kw">)</span></span></code></pre></div>
+<h2 id="a-top-level-derivation">A Top-Level Derivation</h2>
+<p>The next thing we’ll add is a top-level nix derivation. This will let us build both the builder itself, as well as use the builder to build our website. We’ll start our expression much like we did the builder expression, but we’ll add an additional parameter, <code>doCheck</code>. This will let us temporarily disable running <code>linkchecker</code> if we are in the middle of active development and want to test the site with known broken links.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span> <span class="ex">doCheck</span> <span class="pp">?</span> true</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">,</span> pkgs <span class="pp">?</span> import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {}</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">}:</span></span></code></pre></div>
+<p>Next up, we’ll import our builder and make it available here:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">let</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">builder</span> = import ./builder { inherit pkgs<span class="kw">;</span> <span class="er">}</span><span class="kw">;</span></span></code></pre></div>
+<p>We also want to define a new derivation for our site. We’ll use the standard nix <code>mkDerivation</code> function for this:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>  <span class="ex">site</span> = pkgs.stdenv.mkDerivation {</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="ex">name</span> = <span class="st">&quot;rebeccaskinner.net&quot;</span><span class="kw">;</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">inherit</span> doCheck<span class="kw">;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">src</span> = pkgs.nix-gitignore.gitignoreSourcePure [</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>      <span class="ex">./.gitignore</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;.git&quot;</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;*.cabal&quot;</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;*.hs&quot;</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;.github&quot;</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;builder&quot;</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;dist&quot;</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;dist-newstyle&quot;</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;.#*&quot;</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="ex">]</span> ./.<span class="kw">;</span></span></code></pre></div>
+<p>The name of our derivation gets set to the website, and we inherit our <code>doCheck</code> parameter. Remember this is the same as saying <code>doCheck = doCheck;</code>. We have a few extra things we want to ignore this time around, but otherwise we’re defining our source directory the same way that we defined the root in our <code>builder</code>.</p>
+<p>The build inputs are the packages that we need to build our site. Remember that our builder is the compiler for our site, so we don’t directly need the haskell infrastructure here, just our builder itself. We’re also going to depend on <sub>linkchecker</sub> so we can validate the links in our site:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>    <span class="ex">buildInputs</span> = [ builder pkgs.linkchecker ]<span class="kw">;</span></span></code></pre></div>
+<p>As before, we’re also going to set some locale information into the environment. <code>mkDerivation</code> adds any otherwise unused fields into the environment, so we don’t need to use overrides here to get them added:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>    <span class="dt">LOCALE_ARCHIVE</span> <span class="ot">=</span> <span class="st">&quot;${pkgs.glibcLocales}/lib/locale/locale-archive&quot;</span>;</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">LC_ALL</span> <span class="ot">=</span> <span class="st">&quot;C.UTF-8&quot;</span>;</span></code></pre></div>
+<p>Next, we need to tell nix how to build our site. We’ll tell the <code>buildPhase</code> to call our builder to build our site. The <code>checkPhase</code> will call lintchecker to check the links in the site, and finally the <code>installPhase</code> will copy the build output to the output directory.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>    <span class="ex">buildPhase</span> = <span class="st">''</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>      <span class="va">${builder}</span><span class="ex">/bin/builder</span> build</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">''</span><span class="kw">;</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">checkPhase</span> = <span class="st">''</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>      <span class="ex">linkchecker</span> _site</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">''</span><span class="kw">;</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="ex">installPhase</span> = <span class="st">''</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cp</span> <span class="at">-r</span> _site <span class="va">$out</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">''</span><span class="kw">;</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  <span class="er">}</span><span class="kw">;</span></span></code></pre></div>
+<p>The last thing we’ll do in our derivation is check to see if we’re in a nix shell. If so, we’ll defer to the builder’s shell environment, and otherwise we’ll create a new derivation that combines both the builder along with our <code>site</code> derivation. This will let us build either the site or the builder with <code>nix-build</code> from the top level of our project:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="ex">pkgs.lib.inNixShell</span> then builder</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span> <span class="kw">{</span> <span class="ex">inherit</span> builder site<span class="kw">;</span> <span class="ex">inherit</span> <span class="er">(</span><span class="ex">pkgs</span><span class="kw">)</span> <span class="ex">linkchecker</span><span class="kw">;</span> <span class="kw">}</span></span></code></pre></div>
+<p>The final code for our top-level derivation is:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span> <span class="ex">doCheck</span> <span class="pp">?</span> true</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">,</span> pkgs <span class="pp">?</span> import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {}</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">}:</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="bu">let</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="ex">builder</span> = import ./builder { inherit pkgs<span class="kw">;</span> <span class="kw">};</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">site</span> = pkgs.stdenv.mkDerivation {</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="ex">name</span> = <span class="st">&quot;rebeccaskinner.net&quot;</span><span class="kw">;</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="ex">inherit</span> doCheck<span class="kw">;</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    <span class="ex">src</span> = pkgs.nix-gitignore.gitignoreSourcePure [</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>      <span class="ex">./.gitignore</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;.git&quot;</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;*.cabal&quot;</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;*.hs&quot;</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;.github&quot;</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;builder&quot;</span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;dist&quot;</span></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;dist-newstyle&quot;</span></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;.#*&quot;</span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    <span class="ex">]</span> ./.<span class="kw">;</span></span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    <span class="ex">buildInputs</span> = [ builder pkgs.linkchecker ]<span class="kw">;</span></span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    <span class="ex">LOCALE_ARCHIVE</span> = <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.glibcLocales</span><span class="va">}</span><span class="st">/lib/locale/locale-archive&quot;</span><span class="kw">;</span></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>    <span class="ex">LC_ALL</span> = <span class="st">&quot;C.UTF-8&quot;</span><span class="kw">;</span></span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>    <span class="ex">buildPhase</span> = <span class="st">''</span></span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>      <span class="va">${builder}</span><span class="ex">/bin/rebeccaskinner-net-site</span> build</span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">''</span><span class="kw">;</span></span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>    <span class="ex">checkPhase</span> = <span class="st">''</span></span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>      <span class="ex">linkchecker</span> _site</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">''</span><span class="kw">;</span></span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>    <span class="ex">installPhase</span> = <span class="st">''</span></span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cp</span> <span class="at">-r</span> _site <span class="va">$out</span></span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>    <span class="st">''</span><span class="kw">;</span></span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>  <span class="er">}</span><span class="kw">;</span></span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a><span class="er">in</span></span>
+<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="ex">pkgs.lib.inNixShell</span> then builder</span>
+<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span> <span class="kw">{</span> <span class="ex">inherit</span> builder site<span class="kw">;</span> <span class="ex">inherit</span> <span class="er">(</span><span class="ex">pkgs</span><span class="kw">)</span> <span class="ex">linkchecker</span><span class="kw">;</span> <span class="kw">}</span></span></code></pre></div>
+<p>Now we can try to build our site:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/tmp/rebeccaskinner.github.io</span> λ nix-build <span class="at">-A</span> site</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">error:</span> Package ‘hakyll-4.14.0.0’ in /nix/store/j0cv2zra282hp92wl2j9rfvrgrz3zc2a-nixos-21.11pre292868.7e9e1b6351b/nixos/pkgs/development/haskell-modules/hackage-packages.nix:114755 is marked as broken, refusing to evaluate.</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="ex">a</span><span class="er">)</span> <span class="ex">To</span> temporarily allow broken packages, you can use an environment variable</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>   <span class="cf">for</span> a <span class="ex">single</span> invocation of the nix tools.</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>     <span class="ex">$</span> export NIXPKGS_ALLOW_BROKEN=1</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="ex">b</span><span class="er">)</span> <span class="ex">For</span> <span class="kw">`</span><span class="ex">nixos-rebuild</span><span class="kw">`</span> you can set</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">{</span> <span class="ex">nixpkgs.config.allowBroken</span> = true<span class="kw">;</span> <span class="kw">}</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="er">in</span> <span class="ex">configuration.nix</span> to override this.</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="ex">c</span><span class="er">)</span> <span class="ex">For</span> <span class="kw">`</span><span class="ex">nix-env</span><span class="kw">`</span>, <span class="kw">`</span><span class="ex">nix-build</span><span class="kw">`</span>, <span class="kw">`</span><span class="ex">nix-shell</span><span class="kw">`</span> or any other Nix command you can add</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">{</span> <span class="ex">allowBroken</span> = true<span class="kw">;</span> <span class="kw">}</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="ex">to</span> ~/.config/nixpkgs/config.nix.</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">use</span> <span class="st">'--show-trace'</span> to show detailed location information<span class="kw">)</span></span></code></pre></div>
+<p>Unfortunately, it appears that we’ve encountered a problem with a broken package. Hakyll does not currently seem to build. In the next section, we’ll dig into hakyll and diagnose the problem, and bring a fix back into our nix derivation so that we can successfully build our site.</p>
+<h1 id="patching-hakyll">Patching Hakyll</h1>
+<p>To diagnose why hakyll is broken, we’ll need to start by cloning <a href="https://github.com/jaspervdj/hakyll">the hakyll repository</a> and creating a nix environment where we can start to reproduce the build failures. To do that, after cloning the repository, we’ll start by checking out the tag corresponding to the release that the nixpkg is pointing at, in our case <sub>4.14.0.0</sub>:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">~/projects/hakyll</span> λ git checkout v4.14.0.0</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">HEAD</span> is now at a35e1c3 Bump version to 4.14.0.0</span></code></pre></div>
+<p>Next we need to get a nix environment that we can use to try to build the package. The easiest way to do this is with <sub>cabal2nix</sub>, which will generate a <sub>shell.nix</sub> for us:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">~/projects/hakyll</span> λ cabal2nix <span class="at">--shell</span> . <span class="op">&gt;</span> shell.nix</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ex">~/projects/hakyll</span> λ nix-shell</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="ex">[nix-shell:~/projects/hakyll]$</span></span></code></pre></div>
+<p>Now we can start by trying to build hakyll and see what goes wrong:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">[nix-shell:~/projects/hakyll]$</span> cabal new-build</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Warning:</span> The package list for <span class="st">'hackage.haskell.org'</span> does not exist. Run <span class="st">'cabal</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="st">update'</span> to download it.RemoteRepo {remoteRepoName = RepoName</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;hackage.haskell.org&quot;</span><span class="ex">,</span> remoteRepoURI = http://hackage.haskell.org/,</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="ex">remoteRepoSecure</span> = Just True, remoteRepoRootKeys =</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="ex">[</span><span class="st">&quot;fe331502606802feac15e514d9b9ea83fee8b6ffef71335479a2e68d84adc6b0&quot;</span><span class="ex">,</span><span class="st">&quot;1ea9ba32c526d1cc91ab5e5bd364ec5e9e8cb67179a471872f6e26f0ae773d42&quot;</span><span class="ex">,</span><span class="st">&quot;2c6c3627bd6c982990239487f1abd02e08a02e6cf16edb105a8012d444d870c3&quot;</span><span class="ex">,</span><span class="st">&quot;0a5c7ea47cd1b15f01f5f51a33adda7e655bc0f0b0615baa8e271f4c3351e21d&quot;</span><span class="ex">,</span><span class="st">&quot;51f0161b906011b52c6613376b1ae937670da69322113a246a09f807c62f6921&quot;</span><span class="ex">],</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="ex">remoteRepoKeyThreshold</span> = 3, remoteRepoShouldTryHttps = True}</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="ex">Resolving</span> dependencies...</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="ex">cabal:</span> Could not resolve dependencies:</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="ex">[__0]</span> trying: hakyll-4.14.0.0 <span class="er">(</span><span class="ex">user</span> goal<span class="kw">)</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="ex">[__1]</span> trying: hakyll:+usepandoc</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="ex">[__2]</span> next goal: pandoc <span class="er">(</span><span class="ex">dependency</span> of hakyll +usepandoc<span class="kw">)</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="ex">[__2]</span> rejecting: pandoc-2.13/installed-E74Gb9SwyqzDDzSkDaPq28 <span class="er">(</span><span class="ex">conflict:</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="ex">hakyll</span> +usepandoc =<span class="op">&gt;</span> pandoc<span class="op">&gt;</span>=2.11 <span class="kw">&amp;&amp;</span> <span class="op">&lt;</span>2.12<span class="kw">)</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="ex">[__2]</span> fail <span class="er">(</span><span class="ex">backjumping,</span> conflict set: hakyll, pandoc, hakyll:usepandoc<span class="kw">)</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="ex">After</span> searching the rest of the dependency tree exhaustively, these were the</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="ex">goals</span> I<span class="st">'ve had most trouble fulfilling: hakyll, hakyll:usepandoc, pandoc</span></span></code></pre></div>
+<p>It appears that hakyll depends on a version of pandoc between 2.11 and 2.12, but the only version available in our current nix package set is 2.13. At this point, one of the quickest and easiest things to do is to simply modify the dependency to see if the hakyll will still work with the newer version of pandoc. We can do this quite easily by editing the cabal file to change occurrences of:</p>
+<pre class="cabal"><code>pandoc &gt;= 2.11  &amp;&amp; &lt; 2.12</code></pre>
+<p>to instead read</p>
+<pre class="cabal"><code>pandoc == 2.13</code></pre>
+<p>If you try to build again, this time you should get an error with <sub>cryptonite</sub>, which you can also change. Continuing the pattern eventually you will update all of the necessary dependencies and see that hakyll builds and works well with newer dependencies.</p>
+<p>What can we do with this knowledge that we can build hakyll with newer dependencies? One option is to wait until a new version of hakyll is released and is available in the package set. Presumably this newer version will use updated dependencies and we can successfully build then. This is a fine option if you aren’t in a hurry, but you also risk future breakage for the same reason. A second option is to fork the repository and commit a branch with the changes. This is a great solution for fixes that you might eventually want to upstream, where you would already be creating a branch and making a PR. That doesn’t apply in our situation, since we’re using a historic release of hakyll, not the current release.</p>
+<p>The last option at our disposal, and the one we’ll use in this post, is to generate some patch files and apply them as an overlay in our nix derivation. To do that, we first need to generate a patch file. Commit the changes you made to the cabal file, and then you can use <code>git format-patch</code> to generate a patch file with the changes you’ve made:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">[nix-shell:~/projects/hakyll]$</span> git format-patch <span class="at">-1</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">0001-patch-dependencies.patch</span></span></code></pre></div>
+<p>The contents of the patch file contain the information about the changes that we’ve made:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode patch"><code class="sourceCode diff"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>From 1ff887ac0a5e800d63c0ba54908fef2eb4cbd1fc Mon Sep 17 00:00:00 2001</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>From: rebecca skinner &lt;rebecca at rebeccaskinner dot n et&gt;</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>Date: Mon, 7 Jun 2021 01:15:12 -0500</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>Subject: [PATCH] patch dependencies</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="kw">---</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a> hakyll.cabal | 8 ++++----</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a> 1 file changed, 4 insertions(+), 4 deletions(-)</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="kw">diff --git a/hakyll.cabal b/hakyll.cabal</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>index c582934..ef7e565 100644</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="kw">--- a/hakyll.cabal</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="dt">+++ b/hakyll.cabal</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="dt">@@ -175,7 +175,7 @@ Library</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>     blaze-markup         &gt;= 0.5.1    &amp;&amp; &lt; 0.9,</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>     bytestring           &gt;= 0.9      &amp;&amp; &lt; 0.11,</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>     containers           &gt;= 0.3      &amp;&amp; &lt; 0.7,</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a><span class="st">-    cryptonite           &gt;= 0.25     &amp;&amp; &lt; 0.28,</span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="va">+    cryptonite           == 0.28,</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>     data-default         &gt;= 0.4      &amp;&amp; &lt; 0.8,</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>     deepseq              &gt;= 1.3      &amp;&amp; &lt; 1.5,</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>     directory            &gt;= 1.2.7.0  &amp;&amp; &lt; 1.4,</span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a><span class="dt">@@ -185,7 +185,7 @@ Library</span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>     memory               &gt;= 0.14.18  &amp;&amp; &lt; 0.16,</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>     mtl                  &gt;= 1        &amp;&amp; &lt; 2.3,</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>     network-uri          &gt;= 2.6      &amp;&amp; &lt; 2.7,</span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a><span class="st">-    optparse-applicative &gt;= 0.12     &amp;&amp; &lt; 0.16,</span></span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a><span class="va">+    optparse-applicative == 0.16.1.0,</span></span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>     parsec               &gt;= 3.0      &amp;&amp; &lt; 3.2,</span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>     process              &gt;= 1.6      &amp;&amp; &lt; 1.7,</span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>     random               &gt;= 1.0      &amp;&amp; &lt; 1.3,</span>
+<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a><span class="dt">@@ -237,7 +237,7 @@ Library</span></span>
+<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a>     Other-Modules:</span>
+<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a>       Hakyll.Web.Pandoc.Binary</span>
+<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a>     Build-Depends:</span>
+<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a><span class="st">-      pandoc &gt;= 2.11 &amp;&amp; &lt; 2.12</span></span>
+<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a><span class="va">+      pandoc == 2.13</span></span>
+<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a>     Cpp-options:</span>
+<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a>       -DUSE_PANDOC</span>
+<span id="cb23-40"><a href="#cb23-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-41"><a href="#cb23-41" aria-hidden="true" tabindex="-1"></a><span class="dt">@@ -333,4 +333,4 @@ Executable hakyll-website</span></span>
+<span id="cb23-42"><a href="#cb23-42" aria-hidden="true" tabindex="-1"></a>     base      &gt;= 4     &amp;&amp; &lt; 5,</span>
+<span id="cb23-43"><a href="#cb23-43" aria-hidden="true" tabindex="-1"></a>     directory &gt;= 1.0   &amp;&amp; &lt; 1.4,</span>
+<span id="cb23-44"><a href="#cb23-44" aria-hidden="true" tabindex="-1"></a>     filepath  &gt;= 1.0   &amp;&amp; &lt; 1.5,</span>
+<span id="cb23-45"><a href="#cb23-45" aria-hidden="true" tabindex="-1"></a><span class="st">-    pandoc    &gt;= 2.11  &amp;&amp; &lt; 2.12</span></span>
+<span id="cb23-46"><a href="#cb23-46" aria-hidden="true" tabindex="-1"></a><span class="va">+    pandoc    == 2.13</span></span>
+<span id="cb23-47"><a href="#cb23-47" aria-hidden="true" tabindex="-1"></a><span class="st">--</span></span>
+<span id="cb23-48"><a href="#cb23-48" aria-hidden="true" tabindex="-1"></a><span class="dt">2.31.1</span></span></code></pre></div>
+<p>Now that we have a patch, we can return to our blog and make use of the patch to build a custom version of hakyll that will work in our nix environment.</p>
+<h1 id="adding-an-overlay">Adding An Overlay</h1>
+<h2 id="building-an-override">Building an Override</h2>
+<p>To build our overlay, we need to start by creating an override. We could do this inside of our top level <code>default.nix</code>, but I find that it’s helpful for readability to move individual overrides into separate files, so I created a new file at <code>nix/hakyll/default.nix</code>. Inside of the file we need to create a new override.</p>
+<p>A nix override is a function of two arguments to a set of packages, or more precisely we can think of it as a function with the type:</p>
+<pre><code>PackageSet -&gt; PackageSet -&gt; PackageSet</code></pre>
+<p>The first package set is the “final” package set that we get from applying all of the overlays. The second argument is the package set before application of the function. The traditional names for these arguments are <code>self</code> and <code>super</code>, but I prefer to call them <code>fixedPoint</code> and <code>pkgs</code>.</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">fixedPoint:</span> pkgs: {</span></code></pre></div>
+<p>Hakyll isn’t in the top-level package group, instead it’s part of of nix’s haskell package set. These are stored on a per-compiler-version level under nixpkgs in <code>haskell.packages.&lt;compiler&gt;.packagename</code>. The <code>haskellPackages</code> package set is an alias for the package set for the current stable compiler.</p>
+<p>This means that we have a choice to either override the package in a specific compiler version, or else to override it in the <code>haskellPackages</code>. As you’ll see in the next section, we’re going to be pinning the version of nix to a specific commit, so for our purposes for now it doesn’t matter as much, so we’ll work directly with <code>haskellPackages</code>.</p>
+<p>An overlay is essentially a set of packages that will supercede the packages in the set that is to be overlayed. In this case, we want to replace the existing <code>haskellPackages</code> set with a different version that is using our patched version of hakyll, so we’ll start by setting <code>haskellPackages</code> to over overridden version:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">haskellPackages</span> = pkgs.haskellPackages.override {</span></code></pre></div>
+<p>The override function in <code>haskellPackages</code> takes a record with an <code>overrides</code> argument. This is going to be another function that takes a fixed point and a package set, just like the top level function we’ve built. We’ll call these <code>haskellFixedPoint</code> and <code>haskellPkgs</code> to differentiate them from our top level <code>fixedPoint</code> and <code>pkgs</code> parameters, although it’s worth remembering that technically we could shadow our variable names here:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">overrides</span> = haskellFixedPoint: haskellPkgs: {</span></code></pre></div>
+<p>Again here we’re going to be providing a set of packages that should replace the default package set inside of <code>haskellPackages</code>. This time we’re going to be replacing <code>hakyll</code> inside of the haskell package set:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">hakyll</span> = haskellPkgs.hakyll.overrideAttrs <span class="er">(</span><span class="ex">oldAttrs:</span> rec {</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">allowBroken</span> = true<span class="kw">;</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">patches</span> = [./deps.patch]<span class="kw">;</span></span></code></pre></div>
+<p>We’re replacing two attributes here: <code>allowBroken</code> is a boolean that tells nix to not try to build the derivation. We’re fixing the derivation in our overridden version, so we want to tell nix to allow this version. We’re also setting the <code>patches</code> attribute, which provides a set of patch files that should be applied to the source code before building. When our new patch is applied, it will fix the dependencies that have caused hakyll to fail to build.</p>
+<p>Our nix expression ends up looking like this:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">fixedPoint:</span> pkgs: {</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">haskellPackages</span> = pkgs.haskellPackages.override {</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">overrides</span> = haskellFixedPoint: haskellPkgs: {</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>      <span class="ex">hakyll</span> = haskellPkgs.hakyll.overrideAttrs <span class="er">(</span><span class="ex">oldAttrs:</span> rec {</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>        <span class="ex">allowBroken</span> = true<span class="kw">;</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>        <span class="ex">patches</span> = [./deps.patch]<span class="kw">;</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>      <span class="er">}</span><span class="kw">);</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>    <span class="er">}</span><span class="kw">;</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>  <span class="er">}</span><span class="kw">;</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="er">}</span></span></code></pre></div>
+<p>Finally, we need to copy the patch file that we generated earlier into this directory, and name it <code>deps.patch</code>. If you decide to pick a different name, be sure to update the patches list in the nix expression to refer to the correct filename.</p>
+<h2 id="adding-the-overlay">Adding The Overlay</h2>
+<p>Now that we have an overlay we need to actually apply it when we import our package set. To do that, we need to set the <code>overlays</code> parameter when we import <code>&lt;nixpkgs&gt;</code>.</p>
+<p>To do that, we’ll remove the pkgs as a parameter to our top-level expression, and import it in a let statement where we can pass in a parameter:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">{doCheck</span> <span class="pp">?</span> true}:</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="bu">let</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="ex">pkgs</span> = import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> { overlays = [<span class="er">(</span><span class="ex">import</span> ./nix/hakyll<span class="kw">)</span><span class="ex">]</span><span class="kw">;</span> <span class="er">}</span><span class="kw">;</span></span></code></pre></div>
+<p>By setting the <code>overlays</code> argument when we import <code>nixpkgs</code>, we tell nix to add in our hakyll overlay. This causes us to replace the standard <code>haskellPackages</code> with one where we’re using our patched version of <code>hakyll</code>.</p>
+<h1 id="pinning-nixpkgs">Pinning Nixpkgs</h1>
+<p>Unfortunately, there’s one sticking point that we still need to deal with. After all of the work we’ve done to nixify our application, we face the possibility that another update might cause more dependencies to move out of the range of compatability, meaning that we’d need to add more patches. Worse, we might find ourselves with a set of haskell packages that actually break hakyll.</p>
+<p>To resolve this, we can choose to stick with the version of nixpkgs we were using at the time that we got everything working. This is referred to as <em>pinning</em>.</p>
+<p>Remember that <code>&lt;nixpkgs&gt;</code> isn’t anything magical in the nix world- it’s just a pointer to some particular commit into the <code>nixpkgs</code> repo, depending on the channel you are following. You can think of it as being analogous to a git branch name. When we pin a package, instead of referring to this name which might point to a different commit over time, we instead tell nix how to download precisely the package set that we want. We’ll do that using the <code>builtins.fetchTarball</code> function to pull a tarball from github.</p>
+<p>To fetch a tarball we need a name, a URL, and a sha256 value. The name can be anything we like, but it’s helpful to make it something that lets you easily understand what the package set should be, like the date it was fetch:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pkgs</span> = import <span class="er">(</span><span class="ex">builtins.fetchTarball</span> {</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">name</span> = <span class="st">&quot;nixos-unstable-2020-06-06&quot;</span><span class="kw">;</span></span></code></pre></div>
+<p>The URL should be a URL to the tarball with the repository contents. To get that, you need the revision of the version of nixpkgs that you’re on. You can get the revision from <code>nix repl</code> by calling <code>lib.version</code>:</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="ex">~/projects/rebeccaskinner.github.io</span> λ nix repl <span class="st">'&lt;nixpkgs&gt;'</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Welcome</span> to Nix version 2.3.11. Type :<span class="pp">?</span> for help.</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="ex">Loading</span> <span class="st">'&lt;nixpkgs&gt;'</span>...</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Added</span> 14253 variables.</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a><span class="ex">nix-repl</span><span class="op">&gt;</span> lib.version</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;21.11pre292868.7e9e1b6351b&quot;</span></span></code></pre></div>
+<p>The pattern to get an archive from github is: <code>github.com/&lt;org&gt;/&lt;project&gt;/archive/&lt;sha&gt;.tar.gz</code>, so in this case:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>    <span class="ex">url</span> = <span class="st">&quot;https://github.com/nixos/nixpkgs/archive/7e9e1b6351b.tar.gz&quot;</span><span class="kw">;</span></span></code></pre></div>
+<p>The last thing we need is the sha256 of the unpacked archive. We can get this with <code>nix-prefetch-url</code>:</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="ex">~/projects/rebeccaskinner.github.io</span> λ nix-prefetch-url <span class="at">--unpack</span> https://github.com/nixos/nixpkgs/archive/7e9e1b6351b.tar.gz</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="ex">unpacking...</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="ex">[23.1</span> MiB DL]</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="ex">path</span> is <span class="st">'/nix/store/10mqgnhpj661jlqm7hbhdv2s597wcc5x-7e9e1b6351b.tar.gz'</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="ex">1ga7zkkzksgpvymkblj31m55zdrn1ak2iqnisk177x5mgd9vvcqp</span></span></code></pre></div>
+<p>When we set the <code>sha256</code> field the final version of our new top-level default.nix becomes:</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="ex">{doCheck</span> <span class="pp">?</span> true}:</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="bu">let</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  <span class="ex">pkgs</span> = import <span class="er">(</span><span class="ex">builtins.fetchTarball</span> {</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">name</span> = <span class="st">&quot;nixos-unstable-2020-06-06&quot;</span><span class="kw">;</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    <span class="ex">url</span> = <span class="st">&quot;https://github.com/nixos/nixpkgs/archive/7e9e1b6351b.tar.gz&quot;</span><span class="kw">;</span></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>    <span class="ex">sha256</span> = <span class="st">&quot;1ga7zkkzksgpvymkblj31m55zdrn1ak2iqnisk177x5mgd9vvcqp&quot;</span><span class="kw">;</span></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>  <span class="er">}</span><span class="kw">){</span></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>    <span class="ex">config</span> = { allowBroken = true<span class="kw">;</span> <span class="kw">};</span></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>    <span class="ex">overlays</span> = [<span class="er">(</span><span class="ex">import</span> ./nix/hakyll<span class="kw">)</span><span class="ex">]</span><span class="kw">;</span></span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>  <span class="er">}</span><span class="kw">;</span></span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a>  <span class="ex">builder</span> = import ./builder { inherit pkgs<span class="kw">;</span> <span class="er">}</span><span class="kw">;</span></span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a>  <span class="ex">site</span> = pkgs.stdenv.mkDerivation {</span>
+<span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a>    <span class="ex">name</span> = <span class="st">&quot;rebeccaskinner.net&quot;</span><span class="kw">;</span></span>
+<span id="cb35-16"><a href="#cb35-16" aria-hidden="true" tabindex="-1"></a>    <span class="ex">inherit</span> doCheck<span class="kw">;</span></span>
+<span id="cb35-17"><a href="#cb35-17" aria-hidden="true" tabindex="-1"></a>    <span class="ex">src</span> = pkgs.nix-gitignore.gitignoreSourcePure [</span>
+<span id="cb35-18"><a href="#cb35-18" aria-hidden="true" tabindex="-1"></a>      <span class="ex">./.gitignore</span></span>
+<span id="cb35-19"><a href="#cb35-19" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;.git&quot;</span></span>
+<span id="cb35-20"><a href="#cb35-20" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;*.cabal&quot;</span></span>
+<span id="cb35-21"><a href="#cb35-21" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;*.hs&quot;</span></span>
+<span id="cb35-22"><a href="#cb35-22" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;.github&quot;</span></span>
+<span id="cb35-23"><a href="#cb35-23" aria-hidden="true" tabindex="-1"></a>    <span class="ex">]</span> ./.<span class="kw">;</span></span>
+<span id="cb35-24"><a href="#cb35-24" aria-hidden="true" tabindex="-1"></a>    <span class="ex">buildInputs</span> = [ builder pkgs.linkchecker ]<span class="kw">;</span></span>
+<span id="cb35-25"><a href="#cb35-25" aria-hidden="true" tabindex="-1"></a>    <span class="ex">LOCALE_ARCHIVE</span> = <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.glibcLocales</span><span class="va">}</span><span class="st">/lib/locale/locale-archive&quot;</span><span class="kw">;</span></span>
+<span id="cb35-26"><a href="#cb35-26" aria-hidden="true" tabindex="-1"></a>    <span class="ex">LC_ALL</span> = <span class="st">&quot;C.UTF-8&quot;</span><span class="kw">;</span></span>
+<span id="cb35-27"><a href="#cb35-27" aria-hidden="true" tabindex="-1"></a>    <span class="ex">buildPhase</span> = <span class="st">''</span></span>
+<span id="cb35-28"><a href="#cb35-28" aria-hidden="true" tabindex="-1"></a>      <span class="va">${builder}</span><span class="ex">/bin/builder</span> build</span>
+<span id="cb35-29"><a href="#cb35-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">''</span><span class="kw">;</span></span>
+<span id="cb35-30"><a href="#cb35-30" aria-hidden="true" tabindex="-1"></a>    <span class="ex">checkPhase</span> = <span class="st">''</span></span>
+<span id="cb35-31"><a href="#cb35-31" aria-hidden="true" tabindex="-1"></a>      <span class="ex">linkchecker</span> _site</span>
+<span id="cb35-32"><a href="#cb35-32" aria-hidden="true" tabindex="-1"></a>    <span class="st">''</span><span class="kw">;</span></span>
+<span id="cb35-33"><a href="#cb35-33" aria-hidden="true" tabindex="-1"></a>    <span class="ex">installPhase</span> = <span class="st">''</span></span>
+<span id="cb35-34"><a href="#cb35-34" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cp</span> <span class="at">-r</span> _site <span class="va">$out</span></span>
+<span id="cb35-35"><a href="#cb35-35" aria-hidden="true" tabindex="-1"></a>    <span class="st">''</span><span class="kw">;</span></span>
+<span id="cb35-36"><a href="#cb35-36" aria-hidden="true" tabindex="-1"></a>  <span class="er">}</span><span class="kw">;</span></span>
+<span id="cb35-37"><a href="#cb35-37" aria-hidden="true" tabindex="-1"></a><span class="er">in</span></span>
+<span id="cb35-38"><a href="#cb35-38" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="ex">pkgs.lib.inNixShell</span> then builder</span>
+<span id="cb35-39"><a href="#cb35-39" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span> <span class="kw">{</span> <span class="ex">inherit</span> builder site<span class="kw">;</span> <span class="ex">inherit</span> <span class="er">(</span><span class="ex">pkgs</span><span class="kw">)</span> <span class="ex">linkchecker</span><span class="kw">;</span> <span class="kw">}</span></span></code></pre></div>
+<p>With the new default.nix in place and everything patched, we can easily build our site:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="ex">~/projects/rebeccaskinner.githug.io</span> λ nix-build <span class="at">-A</span> site</span></code></pre></div>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </footer>
+    </body>
+</html>
