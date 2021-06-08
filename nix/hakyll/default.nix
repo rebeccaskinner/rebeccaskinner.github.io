@@ -1,7 +1,7 @@
-self: pkgs: {
+fixedPoint: pkgs: {
   haskellPackages = pkgs.haskellPackages.override {
-    overrides = haskellSelf: haskellP: {
-      hakyll = haskellP.hakyll.overrideAttrs (oldAttrs: rec {
+    overrides = haskellFixedPoint: haskellPkgs: {
+      hakyll = haskellPkgs.hakyll.overrideAttrs (oldAttrs: rec {
         allowBroken = true;
         patches = [./deps.patch];
       });

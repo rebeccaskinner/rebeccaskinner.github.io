@@ -1,14 +1,13 @@
-{ doCheck ? true
-}:
+{doCheck ? true}:
 
 let
   pkgs = import (builtins.fetchTarball {
     name = "nixos-unstable-2020-06-06";
-    url = "https://github.com/nixos/nixpkgs/archive/7e9e1b6351bb4acc71f88d3fc4defa3fa899e121.tar.gz";
+    url = "https://github.com/nixos/nixpkgs/archive/7e9e1b6351b.tar.gz";
     sha256 = "1ga7zkkzksgpvymkblj31m55zdrn1ak2iqnisk177x5mgd9vvcqp";
   }){
     config = { allowBroken = true; };
-     overlays = [(import ./nix/hakyll)];
+    overlays = [(import ./nix/hakyll)];
   };
 
   builder = import ./builder { inherit pkgs; };
@@ -26,7 +25,7 @@ let
     LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
     LC_ALL = "C.UTF-8";
     buildPhase = ''
-      ${builder}/bin/rebeccaskinner-net-site build
+      ${builder}/bin/builder build
     '';
     checkPhase = ''
       linkchecker _site

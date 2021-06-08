@@ -5,7 +5,7 @@ cabal-version:   >= 1.10
 license:         BSD3
 license-file:    LICENSE
 
-executable rebeccaskinner-net-site
+executable builder
   main-is:          site.hs
   build-depends:    base == 4.*
                   , hakyll >= 4.14 && < 4.15
