@@ -32,6 +32,7 @@ let
     '';
     installPhase = ''
       cp -r _site $out
+      cp -r CNAME $out
     '';
   };
 in
