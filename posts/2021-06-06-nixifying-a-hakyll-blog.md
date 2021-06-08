@@ -83,7 +83,7 @@ ones. The first parameter we need to pass in is the root of the project
 filesystem. This needs to be a derivation in the package store, so we can't
 simply pass in a path or list of files directly. One option to create a
 filesystem in the nix packagestore is to use `builtins.filterPackage`, but we'll
-opt for the more egonomic `gitignoreSourcePure` from [nix-gitignore](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-nix-gitignore).
+opt for the more ergonomic `gitignoreSourcePure` from [nix-gitignore](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-nix-gitignore).
 
 We call this function with a list of globs, using the same syntax we could use
 for gitignore files, and a root directory. We'll get back a derivation in the
@@ -526,8 +526,8 @@ in the next section, we're going to be pinning the version of nix to a specific
 commit, so for our purposes for now it doesn't matter as much, so we'll work
 directly with `haskellPackages`.
 
-An overlay is essentially a set of packages that will supercede the packages in
-the set that is to be overlayed. In this case, we want to replace the existing
+An overlay is essentially a set of packages that will supersede the packages in
+the set that is to be overlaid. In this case, we want to replace the existing
 `haskellPackages` set with a different version that is using our patched version
 of hakyll, so we'll start by setting `haskellPackages` to over overridden
 version:
@@ -609,7 +609,7 @@ with one where we're using our patched version of `hakyll`.
 Unfortunately, there's one sticking point that we still need to deal with. After
 all of the work we've done to nixify our application, we face the possibility
 that another update might cause more dependencies to move out of the range of
-compatability, meaning that we'd need to add more patches. Worse, we might find
+compatibility, meaning that we'd need to add more patches. Worse, we might find
 ourselves with a set of haskell packages that actually break hakyll.
 
 To resolve this, we can choose to stick with the version of nixpkgs we were
