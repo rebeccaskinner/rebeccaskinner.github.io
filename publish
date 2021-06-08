@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -eou pipefail
+
+git stash push -m "publish stash"
+nix-build -A site
+chmod -R +w docs
+cp -av result/* docs/
+git add docs
+git commit -m "auto-publish commit"
+git stash pop
+
+echo "Site will be updated on the next push"
