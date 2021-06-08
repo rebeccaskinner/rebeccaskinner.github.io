@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Rebecca Skinner - 2018-05-09-python-and-nix</title>
+        <link rel="stylesheet" href="../css/default.css" />
+        <link rel="stylesheet" href="../css/syntax.css" />
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">Rebecca Skinner</a>
+            </div>
+            <nav>
+              <a href="../">Home</a>
+              <a href="../resume.html">Resume</a>
+              <a href="https://github.com/rebeccaskinner/">Github</a>
+              <a href="https://twitter.com/cercerilla">Twitter</a>
+              <a href="../archive.html">Archive</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1>2018-05-09-python-and-nix</h1>
+            <article>
+    <section class="header">
+        Posted on May  9, 2018
+        
+    </section>
+    <section>
+        <p>+++ author = “Rebecca Skinner” title = “Building Python Applications with Nix” categories = [“python”, “nix”] tags = [“python”, “nix”, “practice”] date = “2018-05-09” description = “An overview of using nix to manage python development environments” type = “post” +++</p>
+<h2 id="introduction">Introduction</h2>
+<p>Nix is a package general purpose package manager available for <em>nix systems, including Linux (including <a href="https://nixos.org">NixOS</a>), </em>bsd, and MacOS. Nix provides several novel capabilities, specifically immutability and reproducability. A nix package defines exact versions of all of it’s dependencies, and a nix installation manages each individual application independently. In this post we’ll look at using Nix during the development process, comparing it to virtualenv and pip for developing a python application.</p>
+<h2 id="background">Background</h2>
+<p>Most software developers these days find ourselves working across a variety of applications written in different languages, with different dependencies, and targeting different platforms. The net result of this is a proliferation of tools designed to address the problem of how to manage our development environments. Most of these tools are specialized in one way or another. Tools like homebrew, apt, and chocolatey may help us install applications, but then we must turn to separate tools, often language specific, like pip, gem, and hex to install language dependencies. Tools like virtualenv, rbenv, and pkg-config help us manage separate tool and dependency versions. We may even use tools like Docker to make it easier to distribute our applications across different environments.</p>
+<p>Some languages and toolchains, like <code>go dep</code> and haskell’s <code>stack</code> and <code>cabal-install</code>, manage versioning and dependencies within the scope of a project’s source tree, others like virtualenv, manage virtual environments with through environment variables or symlinks.</p>
+<p>The nix package manager addresses several many of the problems that developers might otherwise need to use multiple tools to manage. Nix provides a mechanism to create immutable environments for building and running applications by combining package installation, dependency management, and environment setup all in a single tool. Nix can be used in place of tools like homebrew or apt to distribute and install packages, it can be used to manage local user-wide environment options like shell and editor configs, and it can be used to manage the build environment for specific applications. These configurations can be composed and combined into unique reproducible environments.</p>
+<p>The rest of this article will focus on one particular use-case of nix: as a replacement for tools that manage virtual environments. In our example we will be developing a python application, and using nix in place of virtualenv to manage our applications dependencies.</p>
+<h2 id="setting-up-the-environment">Setting Up the Environment</h2>
+<h3 id="install-nix">Install Nix</h3>
+<p><a href="https://nixos.org/nix/">Nix</a> can be installed on most *nix systems from source or via a curl-bash command.</p>
+<pre><code>curl https://nixos.org/nix/install | sh</code></pre>
+<p>Once you’ve installed nix, you’ll want to configure your local environment to use nix. Add the following into your <code>${HOME}/.bashrc</code>:</p>
+<pre><code>source /home/rebecca/.nix-profile/etc/profile.d/nix.sh</code></pre>
+<p>You can check that everything is working by running:</p>
+<pre><code>rebecca@debian:~$ which hello
+rebecca@debian:~$ echo $? # demonstrate that &quot;hello&quot; wasn't installed
+rebecca@debian:~$ nix-shell -p hello # start nix-shell including hello
+[nix-shell:~]$ which hello # now it's found!
+/nix/store/6mab2znnw7j96k3vsdw9vyckady29r46-hello-2.10/bin/hello
+[nix-shell:~]$ exit</code></pre>
+<h3 id="create-a-development-environment">Create a development Environment</h3>
+<p>The sample project we’ll be using is a small <a href="https://github.com/rebeccaskinner/py-todo">Python 3 web appliation</a> built using <a href="http://flask.pocoo.org/">Flask</a>. We’ll have minimal dependencies, in this case just python3 and the flask library.</p>
+<p>We’ll start by creating a nixpkg called <code>default.nix</code>. The first thing we’ll want to do is import the list of nixpkgs that we know about in our environment:</p>
+<pre><code>with import&lt;nixpkgs&gt; {};</code></pre>
+<p>The <code>with</code> keyword allows us to bring a set of variables into scope in a statement. The <code>import</code> allows us to import another nix package. In our case, <code>&lt;nixpkgs&gt;</code> is an nix variable defined in the <code>$NIX_PATH</code> environment variable:</p>
+<pre><code>[nix-shell:~/projects/py-todo]$ echo ${NIX_PATH}
+nixpkgs=/home/rebecca/.nix-defexpr/channels/nixpkgs</code></pre>
+<p>The import statement allows us to specify parameters that will be passed into the nixpkgs that we import. In our case, we don’t want to pass anything in so we simply use <code>{}</code> in our import statement.</p>
+<h4 id="derivations">Derivations</h4>
+<p>Derivations are the core of building nixpkgs. A derivation is, in short, a nix statement that tells us how to derive the environment for a given package. In our case, we want to derive our environment starting with the default standard environment, which will give us things like a bash shell and standard tools like <code>make</code> and <code>gcc</code>:</p>
+<pre><code>stdenv.mkDerivation rec {
+  name = &quot;env&quot;;
+}</code></pre>
+<p>The <code>rec</code> keyword allows us to have recrusively defined references. This means that individual fields in our derivation can reference on another. Allowing these greatly simplifies the process of writing our derivations, at the cost of having nix expressions that may not terminate.</p>
+<h4 id="declaring-dependencies">Declaring Dependencies</h4>
+<p>To declare our dependencies, we’ll first create a list of nix package names that we need for our environment. We can find the names of the packages that we want to install with <code>nix-env</code>.</p>
+<p>Looking up the available python 3 packages is straightforward:</p>
+<pre><code>rebecca@debian:~/projects/py-todo$ nix-env -qaP python3
+nixpkgs.python34      python3-3.4.8
+nixpkgs.python34Full  python3-3.4.8
+nixpkgs.python35      python3-3.5.5
+nixpkgs.python35Full  python3-3.5.5
+nixpkgs.python3       python3-3.6.5
+nixpkgs.python36Full  python3-3.6.5
+nixpkgs.python3Full   python3-3.6.5</code></pre>
+<p>Looking for the name of our Flask package is a bit more difficult since we’re not entirely sure what it might be called. We can use grep to broaden our search:</p>
+<pre><code>rebecca@debian:~/projects/py-todo$ nix-env -qaP | grep Flask | grep python3.6
+nixpkgs.python36Packages.flask                                           python3.6-Flask-0.12.2
+nixpkgs.python36Packages.flask_assets                                    python3.6-Flask-Assets-0.12
+nixpkgs.python36Packages.flask-autoindex                                 python3.6-Flask-AutoIndex-0.6
+nixpkgs.python36Packages.flaskbabel                                      python3.6-Flask-Babel-0.11.1
+nixpkgs.python36Packages.flask-babel                                     python3.6-Flask-Babel-0.11.2
+nixpkgs.python36Packages.flask_cache                                     python3.6-Flask-Cache-0.13.1
+nixpkgs.python36Packages.flask-common                                    python3.6-Flask-Common-0.2.0
+nixpkgs.python36Packages.flask-compress                                  python3.6-Flask-Compress-1.4.0
+nixpkgs.python36Packages.flask-cors                                      python3.6-Flask-Cors-3.0.3
+nixpkgs.python36Packages.flask_elastic                                   python3.6-Flask-Elastic-0.2
+nixpkgs.python36Packages.flask-limiter                                   python3.6-Flask-Limiter-1.0.1
+nixpkgs.python36Packages.flask_login                                     python3.6-Flask-Login-0.4.1
+nixpkgs.python36Packages.flask_mail                                      python3.6-Flask-Mail-0.9.1
+nixpkgs.python36Packages.flask_migrate                                   python3.6-Flask-Migrate-2.1.1
+nixpkgs.python36Packages.flask_oauthlib                                  python3.6-Flask-OAuthlib-0.9.3
+nixpkgs.python36Packages.flask_principal                                 python3.6-Flask-Principal-0.4.0
+nixpkgs.python36Packages.flask-pymongo                                   python3.6-Flask-PyMongo-0.5.1
+nixpkgs.python36Packages.flask-restful                                   python3.6-Flask-RESTful-0.3.6
+nixpkgs.python36Packages.flask_script                                    python3.6-Flask-Script-2.0.6
+nixpkgs.python36Packages.flask-silk                                      python3.6-Flask-Silk-0.2
+nixpkgs.python36Packages.flask_sqlalchemy                                python3.6-Flask-SQLAlchemy-2.1
+nixpkgs.python36Packages.flask_testing                                   python3.6-Flask-Testing-0.7.1
+nixpkgs.python36Packages.flask_wtf                                       python3.6-Flask-WTF-0.14.2</code></pre>
+<p>Now that we know what packages we need to import, we can declare them in our list of dependencies, which We’ll call <code>dependencies</code>:</p>
+<pre><code>dependencies = [
+  python3
+  python36Packages.flask
+]</code></pre>
+<p>Notice the pattern of our package names. <code>python3</code> refers to the <code>python3</code> package, which we can see is pinned to <code>python3-3.6.5</code>. Likewise, our Flask package, <code>python36Packages.flask</code> is pinned to <code>python3.6-Flask-0.12.2</code>. For python packages, the general pattern for package names will be <code>pythonXYPackages.PackageName</code></p>
+<h4 id="configuring-our-environment">Configuring our environment</h4>
+<p>The <code>stdenv</code> derivation will import several additional nix packages for us. Among them is the <code>buildenv</code> package, which allows us to setup a build environment. This build environment is what we’ll use for interactive development in our application.</p>
+<p>The <code>buildEnv</code> package has several variables that we can set to fine-tune our build environment. For our purposes we are concerned with setting the name of our environment and the paths that we want to import into our working environment.</p>
+<p>We set variables inside of a nix package using braces. In the snippet below we are bringing in the <code>buildEnv</code> package with our custom name and import paths:</p>
+<pre><code>env = buildEnv {
+  name = name;
+  paths = dependencies;
+};</code></pre>
+<h4 id="our-finished-nixpkg">Our Finished nixpkg</h4>
+<p>Putting all of the above together, we find ourselves with a rather small nixpkg that brings in everything we need for our application:</p>
+<pre><code>with import&lt;nixpkgs&gt; {};
+stdenv.mkDerivation rec {
+  name = &quot;env&quot;;
+  dependencies = [
+    python3
+    python36Packages.Flask
+  ];
+  env = buildEnv {
+    name = name;
+    paths = dependencies;
+  };
+}</code></pre>
+<h2 id="running-our-application">Running Our Application</h2>
+<p>Once we’ve set up our <code>default.nix</code> file, running our application inside of our nix environment is as simple as calling <code>nix-shell</code>. This will set up a local environment with our requested packages available in our <code>$PATH</code> so that all of our dependencies are available.</p>
+<pre><code>rebecca@debian:~/projects/py-todo$ nix-shell
+[nix-shell:~/projects/py-todo]$ which python3
+/nix/store/96wn2gz3mwi71gwcrvpfg39bsymd7gqx-python3-3.6.5/bin/python3
+[nix-shell:~/projects/py-todo]$ which flask
+/nix/store/swamiw3ygj9wws3spa44wgmjxhlldj3y-python3.6-Flask-0.12.2/bin/flask
+[nix-shell:~/projects/py-todo]$ ./run_server
+ * Serving Flask app &quot;todo_server&quot;
+ * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)</code></pre>
+<h2 id="credits-and-further-reading">Credits and Further Reading</h2>
+<ul>
+<li><a href="https://ocharles.org.uk/blog/posts/2014-02-04-how-i-develop-with-nixos.html">How I Develop with NixOS</a></li>
+<li><a href="https://ariya.io/2016/06/isolated-development-environment-using-nix">Isolated Development Environment using Nix</a></li>
+<li><a href="https://nixos.org/nix/manual/">The Nix Manual</a></li>
+</ul>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </footer>
+    </body>
+</html>
