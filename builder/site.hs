@@ -55,11 +55,6 @@ main = hakyll $ do
                 >>= loadAndApplyTemplate "templates/default.html" archiveCtx
                 >>= relativizeUrls
 
-    create ["css/syntax.css"] $ do
-      route idRoute
-      compile $ do
-        makeItem $ styleToCss pandocCodeStyle
-
     match "index.html" $ do
         route idRoute
         compile $ do
