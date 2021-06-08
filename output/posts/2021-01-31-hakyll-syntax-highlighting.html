@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Rebecca Skinner - Syntax Highlighting in Hakyll</title>
+        <link rel="stylesheet" href="../css/default.css" />
+        <link rel="stylesheet" href="../css/syntax.css" />
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">Rebecca Skinner</a>
+            </div>
+            <nav>
+              <a href="../">Home</a>
+              <a href="../resume.html">Resume</a>
+              <a href="https://github.com/rebeccaskinner/">Github</a>
+              <a href="https://twitter.com/cercerilla">Twitter</a>
+              <a href="../archive.html">Archive</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1>Syntax Highlighting in Hakyll</h1>
+            <article>
+    <section class="header">
+        Posted on January 31, 2021
+        
+            by Rebecca Skinner
+        
+    </section>
+    <section>
+        <p><a href="https://jaspervdj.be/hakyll/">Hakyll</a> is a <a href="https://jamstack.org/what-is-jamstack/">static site generator</a>(SSG). Like most SSGs, hakyll lets you author sites quickly, often by writing nothing more than some markdown. SSGs are particularly popular among people writing about software, and so as you would expect syntax highlighting support is a popular requirement.</p>
+<p>Hakyll, which makes use of <a href="https://pandoc.org/">pandoc</a> for translating documents to HTML, has first class support for generating markup with syntax highlighting information, but it does not automatically generate the stylesheets necessary for the code to appear with highlighting on your generated page. The official documentation provides some information on how to manually curate this syntax highlighting stylesheet, but in this article you’ll learn how to instead have pandoc automatically generate a stylesheet from a given pandoc color scheme.</p>
+<p>TL;DR: If you want to skip the exposition, you can <a href="#solution">jump here</a> to get to the solution to having hakyll auto-generate CSS for syntax highlighting your embedded code.</p>
+<h1 id="syntax-highlighting-with-pandoc-and-markdown">Syntax Highlighting with Pandoc and Markdown</h1>
+<p>Pandoc’s markdown processor is able recognize source code embedded in markdown files using code blocks:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># Printing Hello World</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>Consider this haskell function that will print some text to the screen:</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="in">```haskell</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ot">printHello ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>printHello <span class="ot">=</span> <span class="fu">putStrLn</span> <span class="st">&quot;Hello, World&quot;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ot">```</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ot">In this example, we'll print the message &quot;Hello, World&quot; to the screen</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">printHello ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>printHello <span class="ot">=</span> <span class="fu">putStrLn</span> <span class="st">&quot;Hello, World&quot;</span></span></code></pre></div>
+<p>In this example, we’ve embedded a haskell source code block into our markdown. The backticks (`) start a code block, and the text (<code>haskell</code>) tell pandoc what language to use when generating higlighting.</p>
+<h1 id="reviewing-the-generated-source">Reviewing the Generated Source</h1>
+<p>If you were to build the markdown snippet above and look at the output file, you’ll see that pandoc has generated a new <code>div</code> with the <code>sourceCode</code> attribute. Within this <code>div</code>, as you can see, we have a number of different CSS classes, each representing some part of our code that should be given some particular highlighting.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;div</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;sourceCode&quot;</span> <span class="er">id</span><span class="ot">=</span><span class="st">&quot;cb2&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;pre</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;sourceCode haskell&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">&lt;code</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;sourceCode haskell&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>      <span class="kw">&lt;span</span> <span class="er">id</span><span class="ot">=</span><span class="st">&quot;cb2-1&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">&lt;a</span> <span class="er">href</span><span class="ot">=</span><span class="st">&quot;#cb2-1&quot;</span> <span class="er">aria-hidden</span><span class="ot">=</span><span class="st">&quot;true&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">&lt;/a&gt;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">&lt;span</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;ot&quot;</span><span class="kw">&gt;</span>printHello ::</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">&lt;/span&gt;</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">&lt;span</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;dt&quot;</span><span class="kw">&gt;</span>IO</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">&lt;/span&gt;</span> ()</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>      <span class="kw">&lt;/span&gt;</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>      <span class="kw">&lt;span</span> <span class="er">id</span><span class="ot">=</span><span class="st">&quot;cb2-2&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        <span class="kw">&lt;a</span> <span class="er">href</span><span class="ot">=</span><span class="st">&quot;#cb2-2&quot;</span> <span class="er">aria-hidden</span><span class="ot">=</span><span class="st">&quot;true&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>          <span class="kw">&lt;/a&gt;</span>printHello</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>          <span class="kw">&lt;span</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;ot&quot;</span><span class="kw">&gt;</span>=</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>          <span class="kw">&lt;/span&gt;</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>          <span class="kw">&lt;span</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;fu&quot;</span><span class="kw">&gt;</span>putStrLn</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>          <span class="kw">&lt;/span&gt;</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>          <span class="kw">&lt;span</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;st&quot;</span><span class="kw">&gt;</span><span class="dv">&amp;quot;</span>Hello, World<span class="dv">&amp;quot;</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>          <span class="kw">&lt;/span&gt;</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>      <span class="kw">&lt;/span&gt;</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">&lt;/code&gt;</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;/pre&gt;</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;/div&gt;</span></span></code></pre></div>
+<p>If you use hakyll to build the site and load it up in a browser, you’ll see that although pandoc has helpfully annotated the source code, we still don’t have any highlighting on the text.</p>
+<p><a id="solution"></a></p>
+<h1 id="using-hakyll-pandoc-to-auto-generate-your-syntax-css-file">Using Hakyll Pandoc to Auto-Generate Your Syntax CSS File</h1>
+<p>To get hakyll to auto-generate your syntax highlighting CSS you’ll need to edit the code for your site. If you’re using the defaults from <code>hakyll-init</code> open up <code>site.hs</code>. We’ll need to start by adding a couple of new imports:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Text.Pandoc.Highlighting</span> (<span class="dt">Style</span>, breezeDark, styleToCss)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Text.Pandoc.Options</span>      (<span class="dt">ReaderOptions</span> (..), <span class="dt">WriterOptions</span> (..))</span></code></pre></div>
+<p>Next up, we’ll want to settle on a color theme that we want to have pandoc use when generating our CSS syntax file. I’ll call this <code>pandocCodeStyle</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ot">pandocCodeStyle ::</span> <span class="dt">Style</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>pandocCodeStyle <span class="ot">=</span> breezeDark</span></code></pre></div>
+<p>To explicitly enable source code highlighting, or indeed to do any other sort of configuration to pandoc from within hakyll, we’ll make use of the <code>pandocCompilerWith</code> function. This has the type:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">pandocCompilerWith ::</span> <span class="dt">ReaderOptions</span> <span class="ot">-&gt;</span> <span class="dt">WriterOptions</span> <span class="ot">-&gt;</span> <span class="dt">Compiler</span> (<span class="dt">Item</span> <span class="dt">String</span>)</span></code></pre></div>
+<p>where <code>ReaderOptions</code> and <code>WriterOptions</code> are the pandoc options types that we imported earlier. For now we’ll stick with the default reader options. For the writer, we will override the <code>writerHighlightStyle</code> field to pass in our site’s style:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">pandocCompiler' ::</span> <span class="dt">Compiler</span> (<span class="dt">Item</span> <span class="dt">String</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>pandocCompiler' <span class="ot">=</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  pandocCompilerWith</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    defaultHakyllReaderOptions</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    defaultHakyllWriterOptions</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>      { writerHighlightStyle   <span class="ot">=</span> <span class="dt">Just</span> pandocCodeStyle</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>      }</span></code></pre></div>
+<p>Update any existing calls to <code>pandocCompiler</code> to use your new function. For example, if you are using a default <code>hakyll-init</code> site:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- In main you should have some code that matches &quot;posts/*&quot; and compiles the</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- items there with pandoc.</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>match <span class="st">&quot;posts/*&quot;</span> <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    route <span class="op">$</span> setExtension <span class="st">&quot;html&quot;</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    compile <span class="op">$</span> pandocCompiler'</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/post.html&quot;</span>    postCtx</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/default.html&quot;</span> postCtx</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>        <span class="op">&gt;&gt;=</span> relativizeUrls</span></code></pre></div>
+<p>Now that we’ve made sure we’re building our markup with the appropriate pandoc options, we need to actually generate our syntax file. To do that, we need to create a new CSS file with by calling <code>create</code>. We’ll populate it by calling pandoc’s <code>styleToCss</code> function, which will generate the contents of our new CSS file:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>create [<span class="st">&quot;css/syntax.css&quot;</span>] <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  route idRoute</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  compile <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    makeItem <span class="op">$</span> styleToCss pandocCodeStyle</span></code></pre></div>
+<p>Now that our CSS file will be generated, we just need to add one final change: we have to link to it.</p>
+<p>The most straighforward way to do this is to add a new link in your top-level page template (<code>default.html</code> if you are using the standard hakyll setup):</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;!doctype </span>html<span class="dt">&gt;</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;html</span> <span class="er">lang</span><span class="ot">=</span><span class="st">&quot;en&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">&lt;head&gt;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">&lt;meta</span> <span class="er">charset</span><span class="ot">=</span><span class="st">&quot;utf-8&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>        <span class="kw">&lt;meta</span> <span class="er">http-equiv</span><span class="ot">=</span><span class="st">&quot;x-ua-compatible&quot;</span> <span class="er">content</span><span class="ot">=</span><span class="st">&quot;ie=edge&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">&lt;meta</span> <span class="er">name</span><span class="ot">=</span><span class="st">&quot;viewport&quot;</span> <span class="er">content</span><span class="ot">=</span><span class="st">&quot;width=device-width, initial-scale=1&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">&lt;link</span> <span class="er">rel</span><span class="ot">=</span><span class="st">&quot;stylesheet&quot;</span> <span class="er">href</span><span class="ot">=</span><span class="st">&quot;/css/default.css&quot;</span> <span class="kw">/&gt;</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">&lt;link</span> <span class="er">rel</span><span class="ot">=</span><span class="st">&quot;stylesheet&quot;</span> <span class="er">href</span><span class="ot">=</span><span class="st">&quot;/css/syntax.css&quot;</span> <span class="kw">/&gt;</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">&lt;!-- The rest of your default page goes here--&gt;</span></span></code></pre></div>
+<p>Finally, rebuild your hakyll site generator, and use it to generate the site. You should be able to load it up locally and see your colorful new source code snippets in action.</p>
+<pre><code>user@host:~/projects/blog$ cabal new-build
+Up to date
+user@host:~/projects/blog$ cabal exec site -- build
+Initialising...
+  Creating store...
+  Creating provider...
+  Running rules...
+Checking for out-of-date items
+Compiling
+Success
+user@host:~/projects/blog$ cabal exec site -- watch
+Listening on http://127.0.0.1:8000
+Initialising...
+  Creating store...
+  Creating provider...
+  Running rules...
+Checking for out-of-date items
+Compiling
+Success</code></pre>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </footer>
+    </body>
+</html>
