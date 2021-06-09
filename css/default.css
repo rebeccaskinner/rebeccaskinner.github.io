@@ -11,6 +11,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
     margin: 1rem 0;
 }
+
 p {
     margin: 1rem 0;
 }
@@ -34,6 +35,7 @@ p code {
     background-color: #dda0dd11;
     padding: 0 0.5rem;
 }
+
 ul {
     margin: 1.5em 0;
     padding: 0 0 0 1.5em;
@@ -61,6 +63,16 @@ a:visited {
     text-decoration: none
 }
 
+header > .logo {
+    float: inherit;
+    padding: 0 0;
+}
+
+header > .logo > a > img {
+    max-height: 6em;
+    padding: 0 0;
+    top: 0px;
+}
 
 header > .logo > a {
     font-size: 1.2em;
@@ -73,7 +85,6 @@ nav {
 }
 
 nav a {
-    font-size: 1.8rem;
     font-weight: bold;
     text-transform: lowercase;
     margin: 0 0 0 1.2rem;
