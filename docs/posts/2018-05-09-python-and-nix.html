@@ -4,15 +4,15 @@
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Rebecca Skinner - 2018-05-09-python-and-nix</title>
+        <title>Rebecca Skinner - Building Python Applications with Nix</title>
         <link rel="stylesheet" href="../css/default.css" />
         <link rel="stylesheet" href="../css/syntax.css" />
     </head>
     <body>
         <header>
-            <div class="logo">
-                <a href="../">Rebecca Skinner</a>
-            </div>
+          <div class="logo">
+            <a href="../">Rebecca Skinner</a>
+          </div>
             <nav>
               <a href="../">Home</a>
               <a href="../resume.html">Resume</a>
@@ -23,15 +23,16 @@
         </header>
 
         <main role="main">
-            <h1>2018-05-09-python-and-nix</h1>
+            <h1>Building Python Applications with Nix</h1>
             <article>
     <section class="header">
         Posted on May  9, 2018
         
+            by Rebecca Skinner
+        
     </section>
     <section>
-        <p>+++ author = “Rebecca Skinner” title = “Building Python Applications with Nix” categories = [“python”, “nix”] tags = [“python”, “nix”, “practice”] date = “2018-05-09” description = “An overview of using nix to manage python development environments” type = “post” +++</p>
-<h2 id="introduction">Introduction</h2>
+        <h2 id="introduction">Introduction</h2>
 <p>Nix is a package general purpose package manager available for <em>nix systems, including Linux (including <a href="https://nixos.org">NixOS</a>), </em>bsd, and MacOS. Nix provides several novel capabilities, specifically immutability and reproducability. A nix package defines exact versions of all of it’s dependencies, and a nix installation manages each individual application independently. In this post we’ll look at using Nix during the development process, comparing it to virtualenv and pip for developing a python application.</p>
 <h2 id="background">Background</h2>
 <p>Most software developers these days find ourselves working across a variety of applications written in different languages, with different dependencies, and targeting different platforms. The net result of this is a proliferation of tools designed to address the problem of how to manage our development environments. Most of these tools are specialized in one way or another. Tools like homebrew, apt, and chocolatey may help us install applications, but then we must turn to separate tools, often language specific, like pip, gem, and hex to install language dependencies. Tools like virtualenv, rbenv, and pkg-config help us manage separate tool and dependency versions. We may even use tools like Docker to make it easier to distribute our applications across different environments.</p>

@@ -10,9 +10,9 @@
     </head>
     <body>
         <header>
-            <div class="logo">
-                <a href="./">Rebecca Skinner</a>
-            </div>
+          <div class="logo">
+            <a href="./">Rebecca Skinner</a>
+          </div>
             <nav>
               <a href="./">Home</a>
               <a href="./resume.html">Resume</a>
@@ -24,37 +24,61 @@
 
         <main role="main">
             <h1>Home</h1>
-            <h2>Welcome</h2>
-
-<img src="./images/haskell-logo.png" style="float: right; margin: 10px;" />
-
-<p>Welcome to my blog!</p>
-
-<p>I've reproduced a list of recent posts here for your reading pleasure:</p>
-
-<h2>Posts</h2>
-<ul>
-    
-        <li>
-            <a href="./posts/2021-06-06-nixifying-a-hakyll-blog.html">The Nixification of rebeccaskinner.net</a> - June  6, 2021
-        </li>
-    
-        <li>
-            <a href="./posts/2021-01-31-hakyll-syntax-highlighting.html">Syntax Highlighting in Hakyll</a> - January 31, 2021
-        </li>
-    
-        <li>
-            <a href="./posts/2018-05-11-python-todo-list.html">Building A Todo List with Python and Flask</a> - May 11, 2018
-        </li>
-    
-        <li>
-            <a href="./posts/2018-05-09-python-and-nix.html">2018-05-09-python-and-nix</a> - May  9, 2018
-        </li>
-    
-</ul>
+            <h2>Recent Posts</h2>
+<!-- <ul> -->
+<!--      -->
+<!--         <li> -->
+<!--             <a href="/posts/2021-06-06-nixifying-a-hakyll-blog.html">The Nixification of rebeccaskinner.net</a> - June  6, 2021 -->
+<!--         </li> -->
+<!--      -->
+<!--         <li> -->
+<!--             <a href="/posts/2021-01-31-hakyll-syntax-highlighting.html">Syntax Highlighting in Hakyll</a> - January 31, 2021 -->
+<!--         </li> -->
+<!--      -->
+<!--         <li> -->
+<!--             <a href="/posts/2018-05-11-python-todo-list.html">Building A Todo List with Python and Flask</a> - May 11, 2018 -->
+<!--         </li> -->
+<!--      -->
+<!--         <li> -->
+<!--             <a href="/posts/2018-05-09-python-and-nix.html">Building Python Applications with Nix</a> - May  9, 2018 -->
+<!--         </li> -->
+<!--      -->
+<!-- </ul> -->
 
 
-<p>…or you can find more in the <a href="./archive.html">archives</a>.</p>
+<div class="post-summary">
+<h2><a href="./posts/2021-06-06-nixifying-a-hakyll-blog.html">The Nixification of rebeccaskinner.net</a></h2>
+<span class="readingtime">29 minutes</span><br>
+<div class="postDescription">
+   Nix is great for keeping your applications reproducible once you get them set up, but getting a project building with nix can be overwhelming for new nix users, especially when you run into a dreaded broken upstream dependency. In this article you'll learn how to create a hakyll blog that builds with nix, and in the process learn how to deal with broken upstream dependencies, and create nix overlays with custom patches. 
+</div>
+</div>
+
+<div class="post-summary">
+<h2><a href="./posts/2021-01-31-hakyll-syntax-highlighting.html">Syntax Highlighting in Hakyll</a></h2>
+<span class="readingtime">7 minutes</span><br>
+<div class="postDescription">
+   Hakyll popular among haskell developers for building websites and personal blogs, but building a code-heavy hakyll site can be tricky if you're not skilled at design (like me) since the default hakyll configuration doesn't come with support for syntax highlighting of code blocks. In this article you'll learn an easy way to get syntax highlighting for code in your hakyll blogs using pandoc. 
+</div>
+</div>
+
+<div class="post-summary">
+<h2><a href="./posts/2018-05-11-python-todo-list.html">Building A Todo List with Python and Flask</a></h2>
+<span class="readingtime">29 minutes</span><br>
+<div class="postDescription">
+   The TODO List is the quintessential project for learning how to build web applications. It introduces you to important concepts like: How to build and deploy an application, how to handle CRUD operations, and how to deal with errors. TODO list applications are also prime examples of applications that you can build and add to to improve your skills in other areas over time. In this article you'll learn how to build a basic TODO application in Python using the Flask web framework. 
+</div>
+</div>
+
+<div class="post-summary">
+<h2><a href="./posts/2018-05-09-python-and-nix.html">Building Python Applications with Nix</a></h2>
+<span class="readingtime">6 minutes</span><br>
+<div class="postDescription">
+   Package management in python is a problem with several competing solutions. Do you use virtual environments? pip? poetry? Each approach comes with their own benefits, but one universal drawback to these solutions is the python-specific nature of the tools. When your project comprises mutliple languages, or you want to integrate non-python tools into your workflow, you may wonder how to approach package management that can make use of native as well as python-specific tooling while giving you the guarantees of knowing you're going to get a reproducible set of pinned packages. Nix provides one way to manage python dependencies along side native dependencies. In this article you'll learn how to package python applications so they are reliable, reproducible, and ship with their own development environment using the nix tools and the nixpkgs ecosystem. 
+</div>
+</div>
+
+
 
         </main>
 
