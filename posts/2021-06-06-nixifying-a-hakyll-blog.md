@@ -2,7 +2,14 @@
 author: Rebecca Skinner
 title: The Nixification of rebeccaskinner.net
 categories: ["haskell", "hakyll", "nix"]
-description: Making Your Hakyll Blog Reproducible, With Nix
+description: "
+Nix is great for keeping your applications reproducible once you get them set
+up, but getting a project building with nix can be overwhelming for new nix
+users, especially when you run into a dreaded broken upstream dependency. In
+this article you'll learn how to create a hakyll blog that builds with nix, and
+in the process learn how to deal with broken upstream dependencies, and create nix
+overlays with custom patches.
+"
 ---
 
 # The Great Nixification

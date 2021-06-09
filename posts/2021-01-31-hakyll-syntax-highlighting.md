@@ -2,7 +2,13 @@
 author: Rebecca Skinner
 title: Syntax Highlighting in Hakyll
 categories: ["haskell", "hakyll"]
-description: Learn how to automatically add stylesheets to support syntax highlighting in with hakyll.
+description: "
+Hakyll popular among haskell developers for building websites and personal
+blogs, but building a code-heavy hakyll site can be tricky if you're not skilled
+at design (like me) since the default hakyll configuration doesn't come with
+support for syntax highlighting of code blocks. In this article you'll learn an
+easy way to get syntax highlighting for code in your hakyll blogs using pandoc.
+"
 ---
 
 [Hakyll](https://jaspervdj.be/hakyll/) is a [static site

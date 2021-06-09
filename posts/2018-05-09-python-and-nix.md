@@ -1,12 +1,23 @@
-+++
-author = "Rebecca Skinner"
-title = "Building Python Applications with Nix"
-categories = ["python", "nix"]
-tags = ["python", "nix", "practice"]
-date = "2018-05-09"
-description = "An overview of using nix to manage python development environments"
-type = "post"
-+++
+---
+author: "Rebecca Skinner"
+title: "Building Python Applications with Nix"
+categories: ["python", "nix"]
+tags: ["python", "nix", "practice"]
+date: "2018-05-09"
+description: "
+Package management in python is a problem with several competing solutions. Do
+you use virtual environments? pip? poetry? Each approach comes with their own
+benefits, but one universal drawback to these solutions is the python-specific
+nature of the tools. When your project comprises mutliple languages, or you want
+to integrate non-python tools into your workflow, you may wonder how to approach
+package management that can make use of native as well as python-specific
+tooling while giving you the guarantees of knowing you're going to get a
+reproducible set of pinned packages. Nix provides one way to manage python
+dependencies along side native dependencies. In this article you'll learn how to
+package python applications so they are reliable, reproducible, and ship with
+their own development environment using the nix tools and the nixpkgs ecosystem.
+"
+---
 
 ## Introduction
 

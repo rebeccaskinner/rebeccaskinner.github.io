@@ -28,7 +28,7 @@ pre.numberSource code > span > a:first-child::before
   }
 pre.numberSource { margin-left: 3em; border-left: 1px solid #7a7c7d;  padding-left: 4px; }
 div.sourceCode
-  { color: #b0b0b0; background-color: #2a2035; }
+  { color: #b0b0b0; background-color: #dda0dd11; }
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
