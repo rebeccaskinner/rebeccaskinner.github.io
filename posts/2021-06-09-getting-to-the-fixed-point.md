@@ -212,3 +212,401 @@ doubleFactorial n =
 ```
 
 ## <a id="part2">Fixing Functions</a>
+
+The `fix` function, defined in `Data.Function` in `base`gives us another way to
+approach recursion in haskell. Let's start by taking a look at
+[the documentation for fix](https://hackage.haskell.org/package/base-4.15.0.0/docs/Data-Function.html#v:fix):
+
+### Fix By The Docs
+For ease of readability, the documentation for `fix` is reproduced below:
+
+[fix](https://hackage.haskell.org/package/base-4.15.0.0/docs/Data-Function.html#v:fix)
+ `f`is the least fixed point of the function `f`, i.e. the least defined `x`
+such that `f x = x`.
+
+For example, we can write the factorial function using direct recursion as
+
+```haskell
+λ let fac n = if n <= 1 then 1 else n * fac (n-1) in fac 5
+120
+```
+
+This uses the fact that Haskell’s @let@ introduces recursive bindings. We can
+rewrite this definition using 'fix',
+
+```haskell
+λ fix (\rec n -> if n <= 1 then 1 else n * rec (n-1)) 5
+123
+```
+Instead of making a recursive call, we introduce a dummy parameter `rec`; when
+used within `fix`, this parameter then refers to `fix`’s argument, hence the
+recursion is reintroduced.  `fix :: (a -> a) -> a`
+
+### Untangling the Type of fix
+
+Whenever we want to understand something new in haskell, a good first instinct
+is to start by looking at the types, as this tells us quite a bit about what a
+function can, and often more importantly _can't_ do.
+
+The type of `fix :: (a -> a) -> a` tells us that it's going to take a function,
+and return a value. For the sake of discussion, let's give the function that we
+pass into `fix` the name`g`. So, `g :: a -> a` and `fix g :: a`.
+
+At first look, this might not look all that difficult at all. `fix` just needs
+to call `g` with a value to get a value back out that it can return. We can
+imagine any number of similar functions that would work for something like, say,
+an `Int`:
+
+```haskell
+applyZero :: (Int -> Int) -> Int
+applyZero g = g 0
+```
+
+Similarly, we can think of any number of candidates for `g` that we could pass
+in and get a good result back out:
+
+```haskell
+λ applyZero (+1)
+1
+λ applyZero (*4)
+0
+```
+
+Unfortunately, this relies on the fact that `applyZero` can pick some number to
+pass in. It can do that because we know that it's working with `Int` values, so
+we can pick an `Int` value to pass into it. `fix` doesn't have things so easy-
+since `a` could be _anything_ there's no value we can pick to pass into `g` to
+get back a value.
+
+We can see this play out if we try to pass some function, like `(+1)` into
+`fix`:  It will never give us back a value, because _it can't_. You can try it
+yourself in ghci. When you are satisfied that you won't get back a value, you
+can type `control`+`c` to cancel the current function.
+
+```haskell
+λ fix (+1)
+Interrupted.
+```
+
+The trick to `fix` is that, sometimes, it can give back a result. It can do that
+when the final value that you get back out doesn't depend on any particular
+input value. For example, if we use the `const` function, which ignores any
+argument passed into it and just returns a value, then we can get a result from
+`fix`:
+
+```haskell
+λ fix (const "hello, haskell")
+"hello, haskell"
+```
+
+Ignoring the question of _how this could possibly work_, it makes sense. The
+definition of a fixed point of a function is that it's a value that, when passed
+into a function, causes the function to return that same value. This is exactly
+what `const` does- ignores it's input and returns some value:
+
+```haskell
+λ :t const
+const :: a -> b -> a
+λ :t const "foo"
+const "foo" :: b -> [Char]
+λ f = const "foo"
+λ f 1
+"foo"
+```
+
+This means that whatever value we pass into `const` will be the fixed point of
+the function that it returns.
+
+Outside of the definition of a fixed point though, the behavior of `fix` also
+makes sense if we think about it in terms of laziness, and computability. We've
+already noted that because the `fix` is polymorphic, fixed itself can't ever get
+a value to pass into the function it's trying to find the fixed point of. In a
+strictly evaluated language, that would be a problem, but thanks to haskell's
+laziness, _“a value we can't ever actually compute”_ is still something that we
+can work with.
+
+In the case of `fix`, the parameter that it passes into its function _might_ be
+a value that we can't ever actually compute, but it turns that that's actually
+perfectly okay so long as we never try to compute it. In other words, if the
+function we pass in is _lazy_ in it's argument, then we never try to run the
+impossible calculation of creating a value, and so everything works out.
+
+### The Two-Argument Conundrum
+
+Now that you understand how `fix` can take advantage of laziness to work at all,
+there's another aspect to `fix` that might trip you up reading through the
+documentation.  Recall that the type of fix is `fix :: (a -> a) -> a`, but what
+the documentation passes in a factorial function that takes two arguments:
+
+```haskell
+λ fix (\rec n -> if n <= 1 then 1 else n * rec (n-1)) 5
+120
+```
+
+We can factor the function out from this example and give it a name, and confirm
+that it does, in fact, take two arguments: `rec`, a function with type `(p ->
+p)`, and `n`, a value of type `p`.
+
+```haskell
+λ factorial = \rec n -> if n <= 1 then 1 else n * rec (n-1)
+λ :t factorial
+factorial :: (Ord p, Num p) => (p -> p) -> p -> p
+```
+
+So that it's a bit easier for us to talk about, let's pick some
+specific type to use as we're thinking about this. For no particular reason,
+let's use `Int`, so we can let `factorial` have the type:
+
+```haskell
+factorial :: (Int -> Int) -> Int -> Int
+```
+
+There are two things that we need to remember to be able to put together how
+this works. The first is that it can sometimes be quite helpful for us to stop
+and remember that haskell functions are curried, and to think through what our
+type signatures really mean when we look at them.
+
+We might naturally read the type `(Int -> Int) -> Int -> Int` as _a function
+that takes a function from an Int to an Int, and an Int, returning an Int_. Most
+of the time we can get by just fine when we read our function types this way,
+but every once in a while it can throw us for a loop.
+
+Since haskell functions are curried, a we can rewrite a function like:
+
+```haskell
+factorial :: (Int -> Int) -> Int -> Int
+factorial = \rec n -> if n <= 1 then 1 else n * rec (n-1)
+```
+
+Into one that takes a single argument and returns a new function:
+
+```haskell
+factorial :: (Int -> Int) -> Int -> Int
+factorial = \rec -> \n -> if n <= 1 then 1 else n * rec (n-1)
+```
+
+When we rewrite it that way, we might naturally want to describe the function
+as: _a function that takes a function from and Int to an Int, and returns a
+function from an Int to an Int_. We can rewrite our type signature to reflect
+this restatement of our function so that it reads:
+
+```haskell
+factorial :: (Int -> Int) -> (Int -> Int)
+factorial = \rec -> \n -> if n <= 1 then 1 else n * rec (n-1)
+```
+
+Looking at this rewritten type signature now, we can start to see the second
+important thing that we need to keep in mind. When we're dealing with
+polymorphic functions that take an `a`, the `a` could be _anything_, including a
+function. If we replace the `a` type parameters with `(Int -> Int)` then the
+type of fix would become:
+
+```haskell
+fixFactorial :: ((Int -> Int) -> (Int -> Int)) -> (Int -> Int)
+```
+
+Or, if we let ghci render the type for us without any unnecessary parentheses:
+
+```haskell
+fix @(Int -> Int) :: ((Int -> Int) -> Int -> Int) -> Int -> Int
+```
+
+In the next section we'll take a look at how `fix` is actually implemented. Once
+you've had a chance to see the implementation, we'll come back to both the type
+of fix and how it works with laziness and put all of that knowledge together
+into a more cohesive understanding of how it actually works.
+
+## Implementing fix
+
+For all of the discussion about how `fix` works, it's implementation is
+remarkably short. Whenever we find ourselves facing something completely unknown
+in haskell, we can start by looking at the types, and the next step is often to
+read the source code.  [The source code for fix](https://hackage.haskell.org/package/base-4.15.0.0/docs/src/Data-Function.html#fix
+is available on hackage, and it's quite short:
+
+```haskell
+fix :: (a -> a) -> a
+fix f = let x = f x in x
+```
+
+Let's walk through what's happening here and see if we can get a handle on
+it. We start with a parameter, `f`, which is whatever function we want to find
+the fixed point for.
+
+Next, we create a _recursive let binding_ where we define `x` to be the result
+of applying `f` to `x`. This recursive let binding is the magic behind how the
+fixed point calculation works.
+
+When we first call `fix` and create the let binding where we define `x`, we know
+that it has to have the _type_ a, and a value that, when it's needed, will be
+computed by the expression `f x`.
+
+The `x` in that computation, likewise, isn't a value yet. It's a _thunk_ that,
+_if_ it is evaluated, will be computed by calling `f x`. In other words, we
+start with:
+
+```haskell
+fix f = let x = {- <some unevaluated thunk> -} in x
+```
+
+If whoever calls this function decides they need the value of `x`, then they'll
+get:
+
+```haskell
+fix f = let x = f {- <some unevaluated thunk> -} in x
+```
+
+If `f` is a function like `const` that always returns a value without ever
+looking at it's input value, then `x` will get set to that value and can be
+evaluated without any issues at all.
+
+On the other hand, if `f` does need to evaluate `x`, like when we tried to pass
+in `(+1)`, we'll end up with a computation that can never complete, because each
+time we try to look at `x` we'll get back another layer of _some unevaluated
+thunk_. On the surface, this might seem to be a bit limited. After all, if we
+need to pass in a function that always returns a value and never looks at it's
+input, we're limited to permutations of `const` and not much else, unless we can
+get some data to work with from somewhere else...
+
+## Tying The Knot
+
+The `fix` function doesn't require a function that _never_ evaluates it's
+argument in order to eventually give us back a value. Instead, we need to give
+it a function that _eventually_ doesn't evaluate it's argument. The one-word
+difference here between _never_ and _eventually_ is the difference between a
+computation that terminates and is well-defined, and one that is
+`undefined`. This is where passing a function of two parameters into fix comes
+into play. When we have a function like `(Int -> Int)` there's no option except
+for the input value that we're given to decie _when_ to terminate, so we always
+have to evaluate it. On the other hand, a function with the type `(Int -> Int)
+-> (Int -> Int)` has much more flexibility.  To see how, let's go back to our
+definition of `factorial`:
+
+```haskell
+factorial :: (Int -> Int) -> (Int -> Int)
+factorial rec = \n -> if n <= 1 then 1 else n * rec (n-1)
+```
+
+In this factorial function, we're taking a parameter, `rec :: Int -> Int`, but
+we only ever evaluate it if `n` is greater than 1. Since `n` decreases with each
+step, we know that it will eventually reach 1 (assuming we started with a
+positive number), and so we know that `rec` will eventually not be evaluated,
+and we can return a good value.
+
+When we look at this deeply we can see that this is actually a really
+interesting approach- we're taking advantage of laziness so that we can return a
+function that only causes a value in it's closure to be evaluated when the input
+to the returned function is sufficiently high. It's almost like we're passing
+information backwards through time, but in fact we're simply making use of the
+behavior of lazy evaluation and the call stack to propagate information back and
+eventually resolve some thunks that have been hanging out patiently waiting
+around for us to allow them to be computed.
+
+As a final exercise, let's walk through the example step by step to get a much
+better idea of what's happening when we make use of `fix`.
+
+## Fixing The Factorial
+
+We'll start our manual evaluation by defining two functions:
+
+```haskell
+factorial' :: (Int -> Int) -> (Int -> Int)
+factorial' rec = \n -> if n <= 1 then 1 else n * rec (n-1)
+
+factorial :: Int -> Int
+factorial = fix factorial'
+```
+
+In ghci we'll start by calling `factorial` with `5`:
+
+```haskell
+λ factorial 5
+```
+
+We can expand this to:
+
+```haskell
+fix (\rec n -> if n <= 1 then 1 else n * rec (n - 1)) 5
+```
+
+And that, in turn, becomes:
+
+```haskell
+let x = (\rec n -> if n <= 1 then 1 else rec (n - 1)) x in x 5
+```
+
+If we apply this function to 5, and replace `n` with `5` we end up with:
+
+```haskell
+let x = (\rec 4 ->
+  if 5 <= 1 then 1 else rec (5 - 1)
+  ) x
+in x 5
+```
+
+Following the pattern until we get to our base case, we have:
+
+```haskell
+  let x = (\rec 5 ->
+             if 5 <= 1 then 1 else 5 * rec (5 - 1)
+          ) $ (\rec' 4 ->
+             if 4 <= 1 then 1 else 5 * rec' (4 - 1))
+          ) $ (\rec'' 3 ->
+             if 3 <= 1 then 1 else 3 * rec'' (3 - 1))
+          ) $ (\rec''' 2 ->
+             if 2 <= 1 then 1 else 2 * rec''' (2 - 1))
+          ) $ (\_rec 1 ->
+             if 1 <= 1 then 1 else {- never evaluated #-}
+          )
+  in x $ 5
+```
+
+Once we finally hit the case where `n == 1` and we stop evaluating `rec` we can
+start to resolve the stack of calls in reverse order, so `rec'''` becomes `1`
+and we get:
+
+```haskell
+  let x = (\rec 5 ->
+             if 5 <= 1 then 1 else 5 * rec (5 - 1)
+          ) $ (\rec' 4 ->
+             if 4 <= 1 then 1 else 5 * rec' (4 - 1))
+          ) $ (\rec'' 3 ->
+             if 3 <= 1 then 1 else 3 * rec'' (3 - 1))
+          ) $ (\rec''' 2 ->
+             if 2 <= 1 then 1 else 2 * 1)
+          )
+  in x $ 5
+```
+
+Which becomes:
+
+```haskell
+  let x = (\rec 5 ->
+             if 5 <= 1 then 1 else 5 * rec (5 - 1)
+          ) $ (\rec' 4 ->
+             if 4 <= 1 then 1 else 5 * rec' (4 - 1))
+          ) $ (\rec'' 3 ->
+             if 3 <= 1 then 1 else 3 * 2
+          )
+  in x $ 5
+```
+
+And so on until we finally get to:
+
+```haskell
+  let x = (\_ 5 ->
+             if 5 <= 1 then 1 else 5 * 4 * 3 * 2
+          )
+  in x $ 5
+```
+
+## Conclusion
+
+In this post you've learned how the `fix` function from `Data.Function` relies
+on important features of haskell, like laziness and recursive let bindings, to
+provide us with a way of doing automatic recursion without having to ever
+directly make a recursive call. By understanding how haskell's type system,
+currying, and lazy evaluation work together, and taking time to sympathize with
+the compiler and better understand how expressions are evaluated, you can start
+to see precisely how some of the more interesting, and at first more
+intimidating, areas of haskell work.
