@@ -23,7 +23,7 @@ pandocCompiler' =
 --------------------------------------------------------------------------------
 main :: IO ()
 main = hakyll $ do
-    match "images/*" $ do
+    match (fromList ["favicon.png", "images/*"]) $ do
         route   idRoute
         compile copyFileCompiler
 
