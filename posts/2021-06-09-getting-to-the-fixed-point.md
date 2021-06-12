@@ -72,7 +72,7 @@ factorial 5 = 5 * 4 * 3 * 2 * 1 = 120
 
 The first thing we need to do is to think about how we can take our factorial
 function and break it down into increasingly smaller pieces that have the same
-_shape_ as our overall function. Whenever we're writing a recrusive function, it
+_shape_ as our overall function. Whenever we're writing a recursive function, it
 helps to start by looking at how we can reframe the problem in terms of
 something getting smaller.
 
@@ -180,11 +180,11 @@ function. In most cases, the fact that our data is represented as a list, a
 binary tree, etc. is incidental to the problem at hand. By separating out the
 logic for dealing with individual elements from the logic for traversing data
 structures, we center the relevant bits of our code. Finally, and perhaps most
-importantly, functions like folds give us a common language for talking abou the
-structure of our programs. For someone who has been programming for some time,
-saying that something is “simply a fold over some data” can convey a good deal
-of information about the general idea of how a program is implemented without
-the need to bog them down in too many extraneous details.
+importantly, functions like folds give us a common language for talking about
+the structure of our programs. For someone who has been programming for some
+time, saying that something is “simply a fold over some data” can convey a good
+deal of information about the general idea of how a program is implemented
+without the need to bog them down in too many extraneous details.
 
 ### Recursive Let Bindings
 
@@ -477,7 +477,7 @@ difference here between _never_ and _eventually_ is the difference between a
 computation that terminates and is well-defined, and one that is
 `undefined`. This is where passing a function of two parameters into fix comes
 into play. When we have a function like `(Int -> Int)` there's no option except
-for the input value that we're given to decie _when_ to terminate, so we always
+for the input value that we're given to decide _when_ to terminate, so we always
 have to evaluate it. On the other hand, a function with the type `(Int -> Int)
 -> (Int -> Int)` has much more flexibility.  To see how, let's go back to our
 definition of `factorial`:
