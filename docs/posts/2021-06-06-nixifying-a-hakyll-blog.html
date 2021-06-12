@@ -24,15 +24,20 @@
 
         <main role="main">
             <h1>The Nixification of rebeccaskinner.net</h1>
-            <article>
-    <section class="header">
-        Posted on June  6, 2021
-        
-            by Rebecca Skinner
-        
-    </section>
-    <section>
-        <h1 id="the-great-nixification">The Great Nixification</h1>
+            <meta property="og:title" content="The Nixification of rebeccaskinner.net" />
+<meta property="og:type" content="article" />
+<meta property="og:article:published_time" content="June  6, 2021" />
+<meta property="og:article:section" content="programming" />
+
+<article>
+  <section class="header">
+    Posted on June  6, 2021
+    
+    by Rebecca Skinner
+    
+  </section>
+  <section>
+    <h1 id="the-great-nixification">The Great Nixification</h1>
 <p>I recently migrated this blog away from stack to being built with nix and cabal. The process of migrating to nix has been largely smooth with a couple of learning opportunities along the way. In this post I’ll walk you through how the blog is set up, with a particular focus on how to patch hakyll 4.14 to work with recent versions of nixpkgs, including setting up a custom <code>haskellPackages</code> overlay. After you’ve read this you should be able to build your own nixified hakyll site, and generally have a better understanding of how to manage overlays in the haskell nixpkgs ecosystem.</p>
 <h1 id="the-architecture-of-a-hakyll-site">The Architecture of a Hakyll Site</h1>
 <p><a href="https://jaspervdj.be/hakyll/">Hakyll</a> is a library for building static site generators (SSGs). Like any other static site built with a static site generator, a hakyll site is a static site that is built for you from some component pieces like template files, markdown, and static images, javascript, or CSS. Unlike other static site generators, and a key difference when we are considering how to build our site is that hakyll, being a library, is not a stand-alone tool that we can directly use to build our site. Instead, building our hakyll site is a two-step process: First we need to build our own static site generator, which imports hakyll as a library to do the heavy lifting for us, and second we need to use our newly compiled static site generator to build the site itself.</p>
@@ -402,7 +407,7 @@
 <span id="cb35-39"><a href="#cb35-39" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span> <span class="kw">{</span> <span class="ex">inherit</span> builder site<span class="kw">;</span> <span class="ex">inherit</span> <span class="er">(</span><span class="ex">pkgs</span><span class="kw">)</span> <span class="ex">linkchecker</span><span class="kw">;</span> <span class="kw">}</span></span></code></pre></div>
 <p>With the new default.nix in place and everything patched, we can easily build our site:</p>
 <div class="sourceCode" id="cb36"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="ex">~/projects/rebeccaskinner.githug.io</span> λ nix-build <span class="at">-A</span> site</span></code></pre></div>
-    </section>
+  </section>
 </article>
 
         </main>
