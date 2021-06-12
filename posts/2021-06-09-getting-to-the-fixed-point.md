@@ -33,16 +33,15 @@ If you already have some experience with haskell, you may want to
 
 ## A Quick Look at Recursion in Haskell
 
-A recursive function is a function that refers back to itself. In functional
-programming in general, and haskell in particular, recursion is common enough
-that we've developed several different names for it, each referring to some
-particular flavor or nuance of the way that the recursion is used. A couple of
-terms that will we'll use as we're working toward an
-understanding of fixed points in haskell are: _manual recursion_, _automatic
-recursion_, and _recursive bindings_. The terms In this section we'll spend a
-bit of time looking at each of these, and building up some examples, so that we
-have a common framework for how we think about recursion, and a common language
-for understanding the finer points of how fixed points work.
+A recursive function is a function that refers back to itself. There are
+different ways that you can accomplish recursion, and throughout this article
+we'll look at several of them. We'll start by defining a couple of new terms to
+help us differentiate some particular aspects of recursion that will matter as
+we're exploring fixed points: _manual recursion_, _automatic recursion_, and
+_recursive bindings_. Throughout this section of the article we'll spend some
+time with each of these types of recursion, building up some examples and
+working our way towards a better understanding of how they let us think about
+the general nature of recursion and how it relates to fixed points.
 
 ### Manual Recursion
 
@@ -179,12 +178,12 @@ code a bit more readable by letting us center the “business logic” of our
 function. In most cases, the fact that our data is represented as a list, a
 binary tree, etc. is incidental to the problem at hand. By separating out the
 logic for dealing with individual elements from the logic for traversing data
-structures we center the relevant bits of our code. Finally, and perhaps most
-importantly, functions like folds give us a common language for talking abou
-the structure of our programs. For someone who has been programming for some
-time, saying that something is “simply a fold over some data” can convey a good
-deal of information about the general idea of how a program is implemented
-without the need to bog them down in too many extraneous details.
+structures, we center the relevant bits of our code. Finally, and perhaps most
+importantly, functions like folds give us a common language for talking abou the
+structure of our programs. For someone who has been programming for some time,
+saying that something is “simply a fold over some data” can convey a good deal
+of information about the general idea of how a program is implemented without
+the need to bog them down in too many extraneous details.
 
 ### Recursive Let Bindings
 
@@ -231,7 +230,7 @@ For example, we can write the factorial function using direct recursion as
 120
 ```
 
-This uses the fact that Haskell’s @let@ introduces recursive bindings. We can
+This uses the fact that Haskell’s `let` introduces recursive bindings. We can
 rewrite this definition using 'fix',
 
 ```haskell
@@ -254,7 +253,7 @@ pass into `fix` the name`g`. So, `g :: a -> a` and `fix g :: a`.
 
 At first look, this might not look all that difficult at all. `fix` just needs
 to call `g` with a value to get a value back out that it can return. We can
-imagine any number of similar functions that would work for something like, say,
+imagine any number of similar functions that would work for some specific type,
 an `Int`:
 
 ```haskell
@@ -302,7 +301,7 @@ argument passed into it and just returns a value, then we can get a result from
 Ignoring the question of _how this could possibly work_, it makes sense. The
 definition of a fixed point of a function is that it's a value that, when passed
 into a function, causes the function to return that same value. This is exactly
-what `const` does- ignores it's input and returns some value:
+what `const` does- ignores its input and returns some value:
 
 ```haskell
 λ :t const
@@ -317,18 +316,18 @@ const "foo" :: b -> [Char]
 This means that whatever value we pass into `const` will be the fixed point of
 the function that it returns.
 
-Outside of the definition of a fixed point though, the behavior of `fix` also
-makes sense if we think about it in terms of laziness, and computability. We've
-already noted that because the `fix` is polymorphic, fixed itself can't ever get
-a value to pass into the function it's trying to find the fixed point of. In a
-strictly evaluated language, that would be a problem, but thanks to haskell's
-laziness, _“a value we can't ever actually compute”_ is still something that we
-can work with.
+Outside of the mathematical definition of a fixed point, the behavior of `fix`
+also makes sense if we think about it in terms of laziness, and
+computability. We've already noted that because the `fix` is polymorphic, fixed
+itself can't ever get a value to pass into the function it's trying to find the
+fixed point of. In a strictly evaluated language, that would be a problem, but
+thanks to haskell's laziness, _“a value we can't ever actually compute”_ is
+still something that we can work with.
 
 In the case of `fix`, the parameter that it passes into its function _might_ be
 a value that we can't ever actually compute, but it turns that that's actually
 perfectly okay so long as we never try to compute it. In other words, if the
-function we pass in is _lazy_ in it's argument, then we never try to run the
+function we pass in is _lazy_ in its argument, then we never try to run the
 impossible calculation of creating a value, and so everything works out.
 
 ### The Two-Argument Conundrum
@@ -418,7 +417,7 @@ into a more cohesive understanding of how it actually works.
 
 ## Implementing fix
 
-For all of the discussion about how `fix` works, it's implementation is
+For all of the discussion about how `fix` works, its implementation is
 remarkably short. Whenever we find ourselves facing something completely unknown
 in haskell, we can start by looking at the types, and the next step is often to
 read the source code.  [The source code for fix](https://hackage.haskell.org/package/base-4.15.0.0/docs/src/Data-Function.html#fix
@@ -457,22 +456,22 @@ fix f = let x = f {- <some unevaluated thunk> -} in x
 ```
 
 If `f` is a function like `const` that always returns a value without ever
-looking at it's input value, then `x` will get set to that value and can be
+looking at its input value, then `x` will get set to that value and can be
 evaluated without any issues at all.
 
 On the other hand, if `f` does need to evaluate `x`, like when we tried to pass
 in `(+1)`, we'll end up with a computation that can never complete, because each
 time we try to look at `x` we'll get back another layer of _some unevaluated
 thunk_. On the surface, this might seem to be a bit limited. After all, if we
-need to pass in a function that always returns a value and never looks at it's
+need to pass in a function that always returns a value and never looks at its
 input, we're limited to permutations of `const` and not much else, unless we can
 get some data to work with from somewhere else...
 
 ## Tying The Knot
 
-The `fix` function doesn't require a function that _never_ evaluates it's
+The `fix` function doesn't require a function that _never_ evaluates its
 argument in order to eventually give us back a value. Instead, we need to give
-it a function that _eventually_ doesn't evaluate it's argument. The one-word
+it a function that _eventually_ doesn't evaluate its argument. The one-word
 difference here between _never_ and _eventually_ is the difference between a
 computation that terminates and is well-defined, and one that is
 `undefined`. This is where passing a function of two parameters into fix comes
@@ -495,7 +494,7 @@ and we can return a good value.
 
 When we look at this deeply we can see that this is actually a really
 interesting approach- we're taking advantage of laziness so that we can return a
-function that only causes a value in it's closure to be evaluated when the input
+function that only causes a value in its closure to be evaluated when the input
 to the returned function is sufficiently high. It's almost like we're passing
 information backwards through time, but in fact we're simply making use of the
 behavior of lazy evaluation and the call stack to propagate information back and
