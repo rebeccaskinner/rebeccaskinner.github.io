@@ -1,6 +1,8 @@
 ---
 author: Rebecca Skinner
 title: Syntax Highlighting in Hakyll
+date: 2021-01-31
+summary: "Learn how to generate a source doe highlighting stylesheet from hakyll with pandoc"
 categories: ["haskell", "hakyll"]
 description: "
 Hakyll popular among haskell developers for building websites and personal

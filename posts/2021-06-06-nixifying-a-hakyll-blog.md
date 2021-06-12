@@ -1,5 +1,7 @@
 ---
 author: Rebecca Skinner
+date: 2021-06-06
+summary: Learn how to use a custom overlay to fix a broken hakyll build in nix
 title: The Nixification of rebeccaskinner.net
 categories: ["haskell", "hakyll", "nix"]
 description: "

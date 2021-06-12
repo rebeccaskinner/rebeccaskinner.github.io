@@ -8,6 +8,25 @@
         <link rel="stylesheet" href="/css/default.css" />
         <link rel="stylesheet" href="/css/syntax.css" />
         <link rel="icon" type="impage/png" href="/favicon.png">
+
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="RebeccaSkinner.net" />
+        <meta property="og:image" content="https://rebeccaskinner.net/images/site-banner.png" />
+        <meta property="og:title" content="$title$" />
+
+        $if(date)$
+        <meta property="og:article:published_time" content="$date$" />
+        $endif$
+
+        $if(section)$
+        <meta property="og:article:section" content="$section$" />
+        $endif$
+
+        $if(summary)$
+        <meta property="og:description" content="$summary$" />
+        $endif$
+
+
     </head>
     <body>
         <header>

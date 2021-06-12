@@ -4,6 +4,7 @@ title: "Building Python Applications with Nix"
 categories: ["python", "nix"]
 tags: ["python", "nix", "practice"]
 date: "2018-05-09"
+summary: "Learn how to use nixpkgs as a replacement for python virtual environmets"
 description: "
 Package management in python is a problem with several competing solutions. Do
 you use virtual environments? pip? poetry? Each approach comes with their own

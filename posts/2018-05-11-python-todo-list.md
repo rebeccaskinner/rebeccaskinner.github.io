@@ -3,6 +3,7 @@ author: Rebecca Skinner
 title: Building A Todo List with Python and Flask
 categories: ["python", "flask"]
 tags: ["python", "flask", "practice", "projects"]
+summary: "learn how to build a simple todo list with python and flask"
 description: "
 The TODO List is the quintessential project for learning how to build web
 applications. It introduces you to important concepts like: How to build and

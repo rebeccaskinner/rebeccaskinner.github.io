@@ -5,10 +5,7 @@ title: The Fixed Point
 categories: ["haskell", "beginner", "programming"]
 header-includes: |
   \usepackage{amsfonts}
-summary: "
-In this article you'll learn how haskell's fixed point operator works, and what
-it can teach us about the haskell types and how haskell programs run.
-"
+summary: Learn about laziness, recursion, and fixed points in this beginner level haskell article.
 description: "
 Haskell offers ample opportunities for ah ha! moments, where figuring out just
 how some function or feature works can unlock a whole new way of thinking about
