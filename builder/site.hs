@@ -23,13 +23,17 @@ pandocCompiler' =
 --------------------------------------------------------------------------------
 main :: IO ()
 main = hakyll $ do
-    match (fromList ["favicon.png", "images/*"]) $ do
+    match "images/*" $ do
         route   idRoute
         compile copyFileCompiler
 
     match "css/*" $ do
         route   idRoute
         compile compressCssCompiler
+
+    match (fromList ["favicon.png"]) $ do
+        route   idRoute
+        compile copyFileCompiler
 
     match (fromList ["about.rst", "contact.markdown","resume.markdown"]) $ do
         route   $ setExtension "html"
