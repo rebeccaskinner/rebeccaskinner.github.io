@@ -32,6 +32,8 @@ haskell's lazy evaluation changes the way you can think about writing programs.
 If you already have some experience with haskell, you may want to
 [skip the first section and jump directly into learning about fix](#part2)
 
+Update: 2021-06-13: [A reader helpfully provided some copy editing and fixed a few typos in some examples](https://github.com/rebeccaskinner/rebeccaskinner.github.io/commit/496f1d572d7d7c5ab7b78f572bf7a8623862bcb7)
+
 ## A Quick Look at Recursion in Haskell
 
 A recursive function is a function that refers back to itself. There are
