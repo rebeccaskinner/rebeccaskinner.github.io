@@ -95,9 +95,9 @@ If we go one more step, we can see that:
 
 ```
 factorial 4 = 4 * (3 * 2 * 1)
-factorial 3 =     (2 * 2 * 1)
+factorial 3 =     (3 * 2 * 1)
 
-factorial 4 = 3 * (factorial 3)
+factorial 4 = 4 * (factorial 3)
 ```
 
 From these examples you can start to see the shape of the recursive function
@@ -236,7 +236,7 @@ rewrite this definition using 'fix',
 
 ```haskell
 λ fix (\rec n -> if n <= 1 then 1 else n * rec (n-1)) 5
-123
+120
 ```
 Instead of making a recursive call, we introduce a dummy parameter `rec`; when
 used within `fix`, this parameter then refers to `fix`’s argument, hence the
@@ -532,14 +532,14 @@ fix (\rec n -> if n <= 1 then 1 else n * rec (n - 1)) 5
 And that, in turn, becomes:
 
 ```haskell
-let x = (\rec n -> if n <= 1 then 1 else rec (n - 1)) x in x 5
+let x = (\rec n -> if n <= 1 then 1 else n * rec (n - 1)) x in x 5
 ```
 
 If we apply this function to 5, and replace `n` with `5` we end up with:
 
 ```haskell
-let x = (\rec 4 ->
-  if 5 <= 1 then 1 else rec (5 - 1)
+let x = (\rec 5 ->
+  if 5 <= 1 then 1 else 5 * rec (5 - 1)
   ) x
 in x 5
 ```
@@ -550,7 +550,7 @@ Following the pattern until we get to our base case, we have:
   let x = (\rec 5 ->
              if 5 <= 1 then 1 else 5 * rec (5 - 1)
           ) $ (\rec' 4 ->
-             if 4 <= 1 then 1 else 5 * rec' (4 - 1))
+             if 4 <= 1 then 1 else 4 * rec' (4 - 1))
           ) $ (\rec'' 3 ->
              if 3 <= 1 then 1 else 3 * rec'' (3 - 1))
           ) $ (\rec''' 2 ->
@@ -569,7 +569,7 @@ and we get:
   let x = (\rec 5 ->
              if 5 <= 1 then 1 else 5 * rec (5 - 1)
           ) $ (\rec' 4 ->
-             if 4 <= 1 then 1 else 5 * rec' (4 - 1))
+             if 4 <= 1 then 1 else 4 * rec' (4 - 1))
           ) $ (\rec'' 3 ->
              if 3 <= 1 then 1 else 3 * rec'' (3 - 1))
           ) $ (\rec''' 2 ->
@@ -584,7 +584,7 @@ Which becomes:
   let x = (\rec 5 ->
              if 5 <= 1 then 1 else 5 * rec (5 - 1)
           ) $ (\rec' 4 ->
-             if 4 <= 1 then 1 else 5 * rec' (4 - 1))
+             if 4 <= 1 then 1 else 4 * rec' (4 - 1))
           ) $ (\rec'' 3 ->
              if 3 <= 1 then 1 else 3 * 2
           )
