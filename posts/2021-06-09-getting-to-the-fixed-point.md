@@ -423,7 +423,7 @@ into a more cohesive understanding of how it actually works.
 For all of the discussion about how `fix` works, its implementation is
 remarkably short. Whenever we find ourselves facing something completely unknown
 in haskell, we can start by looking at the types, and the next step is often to
-read the source code.  [The source code for fix](https://hackage.haskell.org/package/base-4.15.0.0/docs/src/Data-Function.html#fix
+read the source code.  [The source code for fix](https://hackage.haskell.org/package/base-4.15.0.0/docs/src/Data-Function.html#fix)
 is available on hackage, and it's quite short:
 
 ```haskell
