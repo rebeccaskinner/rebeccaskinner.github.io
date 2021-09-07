@@ -9,8 +9,6 @@
 
   modifier = drv: pkgs.haskell.lib.overrideCabal drv (attrs: {
     buildTools = with pkgs.haskellPackages; (attrs.buildTools or []) ++ [
-#      cabal-install
-#      hakyll
       pkgs.linkchecker
     ];
   });
