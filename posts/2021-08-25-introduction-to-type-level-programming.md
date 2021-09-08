@@ -142,7 +142,7 @@ talking about is to create some specific instance or implementation of our
 theme.
 
 ```haskell
-import qualified Data.Map.Strict as mapping
+import qualified Data.Map.Strict as Map
 
 newtype ThemeInstance = ThemeInstance { getThemeInstance :: Map.Map String RGB }
 ```
@@ -520,7 +520,7 @@ class ExampleClass (color :: ExampleColor) where
   sayColor :: String
 ```
 
-We're using a king signature here to ensure that `color` must have the kind
+We're using a kind signature here to ensure that `color` must have the kind
 `ExampleColor`, so we can crate instances for `Red`, `Green`, and `Blue` as we'd
 expect:
 
