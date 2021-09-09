@@ -28,11 +28,12 @@ pre.numberSource code > span > a:first-child::before
   }
 pre.numberSource { margin-left: 3em; border-left: 1px solid #7a7c7d;  padding-left: 4px; }
 div.sourceCode
-  { color: #b0b0b0; background-color: #dda0dd11; }
+  { color: #b0b0b0; background-color: #1a1a1aa1; /* background-color: #dda0dd11;*/ }
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span { color: #b0b0b0; } /* Normal */
+/*code span.al { color: #871b60; background-color: #4d1f24; font-weight: bold; } /* Alert */
 code span.al { color: #871b60; background-color: #4d1f24; font-weight: bold; } /* Alert */
 code span.an { color: #a020f0; } /* Annotation */
 code span.at { color: #a020f0; } /* Attribute */
@@ -44,7 +45,8 @@ code span.cn { color: #b0b0b0; font-weight: bold; } /* Constant */
 code span.co { color: #5a5075; } /* Comment */
 code span.cv { color: #5a5075; } /* CommentVar */
 code span.do { color: #5a5075; } /* Documentation */
-code span.dt { color: #a020f0; } /* DataType */
+/*code span.dt { color: #a020f0; } /* DataType */
+code span.dt { color: #c040ff; } /* DataType */
 code span.dv { color: #b0b0b0; } /* DecVal */
 code span.er { color: #871b60; text-decoration: underline; } /* Error */
 code span.ex { color: #b0b0b0; font-weight: bold; } /* Extension */
