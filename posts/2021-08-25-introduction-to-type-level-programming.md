@@ -27,7 +27,7 @@ programming.
 ## Prelude
 
 This blog post is a long-form article based on a talk I delivered at the
-[haskell.love conference](https://haskell.ove) on 10 Sept 2021. Keep an eye out
+[haskell.love conference](https://haskell.love) on 10 Sept 2021. Keep an eye out
 here and I will update this section with a link to the recording of the talk
 when it's available.
 
